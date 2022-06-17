@@ -1,2 +1,3 @@
 # anystub-reactive
-anystun for webflux projects
+
+record input/output for tests in java with webflux.
