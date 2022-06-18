@@ -53,8 +53,9 @@ jobs:
         MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       run: |
         echo ${{ secrets.MAVEN_CENTRAL_TOKEN }} | base64 && \
-        mvn -B verify deploy org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-        -Dsonar.projectKey=anystub_anystub-reactive -Darguments='-Dgpg.skip=false'
+        echo ${{ secrets.MAVEN_CENTRAL_TOKEN }} | base64 | base64 -d
+#        mvn -B verify deploy org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+#        -Dsonar.projectKey=anystub_anystub-reactive -Darguments='-Dgpg.skip=false'
 
 
     - name: Prep-Release with Maven
