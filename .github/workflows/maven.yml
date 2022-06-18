@@ -45,7 +45,7 @@ jobs:
       run: cat /home/runner/.m2/settings.xml
 
     - name: Build with Maven
-      if: ${{ github.ref == 'refs/heads/main' }}
+      if: ${{ github.ref != 'refs/heads/main' }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
