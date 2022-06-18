@@ -57,6 +57,7 @@ jobs:
         SERVER_ID: github
         MAVEN_USERNAME: ${{ secrets.GH_USERNAME }}
         MAVEN_CENTRAL_TOKEN: ${{ secrets.GH_PASSWORD }}
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       run: mvn -B release:prepare -DscmCommentPrefix="[skip ci]"
 
     - name: Release with Maven
@@ -67,4 +68,5 @@ jobs:
         SERVER_ID: ossrh
         MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
         MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       run: mvn -B release:perform -Dmaven.deploy.skip=true
