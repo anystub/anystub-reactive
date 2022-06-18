@@ -63,6 +63,9 @@ jobs:
         MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       run: mvn -B release:prepare -DscmCommentPrefix="[skip ci]"
 
+    - name: view settings
+      run: cat /home/runner/.m2/settings.xml
+
     - name: Release with Maven
       if: ${{ github.ref == 'refs/heads/main' }}
       env:
