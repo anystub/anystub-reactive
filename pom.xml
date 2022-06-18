@@ -11,7 +11,7 @@
 
     <name>anystub-flux</name>
     <description>the library allows to create handy stubs for any tests</description>
-    <url>https://github.com/anystub/anystub-flux</url>
+    <url>https://github.com/anystub/anystub-reactive</url>
 
     <licenses>
         <license>
@@ -30,8 +30,8 @@
 
     <scm>
         <url>anystub-repo</url>
-        <connection>scm:git@github.com:anystub/anystub-reactive.git</connection>
-        <developerConnection>scm:git@github.com:anystub/anystub-reactive.git</developerConnection>
+        <connection>scm:https://github.com/anystub/anystub-reactive.git</connection>
+        <developerConnection>scm:https://github.com/anystub/anystub-reactive.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -40,6 +40,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>11</java.version>
+        <project.scm.id>github</project.scm.id>
 <!--        <gpg.skip>true</gpg.skip>-->
         <sonar.organization>anystub1</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
