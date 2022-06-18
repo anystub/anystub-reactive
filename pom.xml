@@ -30,8 +30,8 @@
 
     <scm>
         <url>anystub-repo</url>
-        <connection>scm:https://github.com/anystub/anystub-reactive.git</connection>
-        <developerConnection>scm:https://github.com/anystub/anystub-reactive.git</developerConnection>
+        <connection>scm:git:https://github.com/anystub/anystub-reactive.git</connection>
+        <developerConnection>scm:git:https://github.com/anystub/anystub-reactive.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
