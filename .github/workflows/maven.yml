@@ -61,7 +61,7 @@ jobs:
         MAVEN_USERNAME: ${{ secrets.GH_USERNAME }}
         MAVEN_CENTRAL_TOKEN: ${{ secrets.GH_PASSWORD }}
         MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-      run: mvn -B release:prepare -DscmCommentPrefix="[skip ci]" -Darguments='-Dgpg.skip=false'
+      run: mvn -B release:prepare -DscmCommentPrefix="[skip ci]" -Darguments='-Dgpg.skip=false' org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=anystub_anystub-reactive
 
     - name: view settings
       run: cat /home/runner/.m2/settings.xml
