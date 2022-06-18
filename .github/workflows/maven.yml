@@ -42,6 +42,9 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
 
+    - name: view settings
+      run: cat /home/runner/.m2/settings.xml
+
     - name: Build with Maven
       if: ${{ github.ref != 'refs/heads/main' }}
       env:
@@ -54,9 +57,6 @@ jobs:
       run: |
         mvn -B verify deploy org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
         -Dsonar.projectKey=anystub_anystub-reactive -Darguments='-Dgpg.skip=false'
-#        echo ${SERVER_PASSWORD} |  sed "s/./& /g"
-#
-
 
     - name: Prep-Release with Maven
       if: ${{ github.ref == 'refs/heads/main' }}
@@ -71,9 +71,6 @@ jobs:
         git config --global user.email "andreev.kirill.o@gmail.com" && \
         git config --global user.name "AUTO-COMMIT" && \ 
         mvn -B release:prepare -DscmCommentPrefix="[skip ci]" -Darguments='-Dgpg.skip=false' org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=anystub_anystub-reactive
-
-    - name: view settings
-      run: cat /home/runner/.m2/settings.xml
 
     - name: Release with Maven
       if: ${{ github.ref == 'refs/heads/main' }}
