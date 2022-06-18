@@ -39,7 +39,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>11</java.version>
         <project.scm.id>github</project.scm.id>
-<!--        <gpg.skip>true</gpg.skip>-->
+        <gpg.skip>true</gpg.skip>
         <sonar.organization>anystub1</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.sources>src/main/java</sonar.sources>
