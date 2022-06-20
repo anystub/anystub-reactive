@@ -1,43 +1,32 @@
 package org.anystub;
 
-import org.anystub.http.AnySettingsHttp;
-import org.anystub.http.AnySettingsHttpExtractor;
-import org.anystub.http.HttpUtil;
-import org.anystub.http.StubHttpClient;
 import org.anystub.mgmt.BaseManagerFactory;
-import org.apache.hc.core5.http.message.BasicHttpRequest;
-import org.apache.http.entity.BasicHttpEntity;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ClientHttpRequest;
 import org.springframework.http.client.reactive.ClientHttpResponse;
-import org.springframework.http.client.reactive.HttpComponentsClientHttpConnector;
 import org.springframework.mock.http.client.reactive.MockClientHttpRequest;
 import org.springframework.mock.http.client.reactive.MockClientHttpResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
+import static org.anystub.AnyStubFileLocator.discoverFile;
+import static org.anystub.SettingsUtil.matchBodyRule;
 import static org.anystub.Util.escapeCharacterString;
 import static org.anystub.Util.toCharacterString;
-import static org.anystub.http.HttpUtil.globalBodyMask;
-import static org.anystub.http.HttpUtil.globalBodyTrigger;
 
 
 public class StubClientHttpConnector implements ClientHttpConnector {
@@ -53,7 +42,7 @@ public class StubClientHttpConnector implements ClientHttpConnector {
 
 
     public static List<String> filterHeaders(HttpHeaders headers){
-        boolean currentAllHeaders = HttpUtil.globalAllHeaders;
+        boolean currentAllHeaders = HttpGlobalSettings.globalAllHeaders;
         AnySettingsHttp settings = AnySettingsHttpExtractor.discoverSettings();
         if (settings != null) {
             currentAllHeaders = settings.allHeaders();
@@ -66,8 +55,8 @@ public class StubClientHttpConnector implements ClientHttpConnector {
             if (settings != null) {
                 headersToAdd.addAll(asList(settings.headers()));
             }
-            if ((settings == null || !settings.overrideGlobal()) && HttpUtil.globalHeaders != null) {
-                headersToAdd.addAll(asList(HttpUtil.globalHeaders));
+            if ((settings == null || !settings.overrideGlobal()) && HttpGlobalSettings.globalHeaders != null) {
+                headersToAdd.addAll(asList(HttpGlobalSettings.globalHeaders));
             }
         }
 
@@ -97,7 +86,8 @@ public class StubClientHttpConnector implements ClientHttpConnector {
 
 
         if (matchBodyRule(uri.toString())) {
-            String body = mockClientHttpRequest.getBodyAsString().blockOptional().orElse("");
+            String body = mockClientHttpRequest.getBodyAsString()
+                    .blockOptional().orElse("");
             if (Util.isText(body)) {
                 key.add(escapeCharacterString(body));
             } else {
@@ -177,7 +167,8 @@ public class StubClientHttpConnector implements ClientHttpConnector {
 
 
     private Base getBase() {
-        AnyStubId s = AnyStubFileLocator.discoverFile();
+        AnyStubId s = discoverFile();
+//        AnyStubId s = AnyStubFileLocator.discoverFile();
         if (s != null) {
             return BaseManagerFactory
                     .getBaseManager()
@@ -196,38 +187,6 @@ public class StubClientHttpConnector implements ClientHttpConnector {
         return this;
     }
 
-    static boolean matchBodyRule(String url) {
-        Set<String> currentBodyTriggers = new HashSet<>();
-
-        AnySettingsHttp settings = AnySettingsHttpExtractor.discoverSettings();
-
-        if (settings != null) {
-            currentBodyTriggers.addAll(asList(settings.bodyTrigger()));
-        }
-
-        if ((settings == null || !settings.overrideGlobal()) && globalBodyTrigger != null) {
-            currentBodyTriggers.addAll(asList(globalBodyTrigger));
-        }
 
 
-        return currentBodyTriggers.stream()
-                .anyMatch(url::contains);
-    }
-
-
-    static String maskBody(String s) {
-        Set<String> currentBodyMask = new HashSet<>();
-
-        AnySettingsHttp settings = AnySettingsHttpExtractor.discoverSettings();
-        if (settings != null) {
-            currentBodyMask.addAll(asList(settings.bodyMask()));
-        }
-
-        if ((settings != null || !settings.overrideGlobal()) && globalBodyMask != null) {
-            currentBodyMask.addAll(asList(globalBodyMask));
-        }
-
-        return currentBodyMask.stream()
-                .reduce(s, (r, m) -> r.replaceAll(m, "..."));
-    }
 }

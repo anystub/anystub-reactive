@@ -3,7 +3,6 @@ package org.anystub;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.anystub.http.AnySettingsHttp;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -32,7 +31,7 @@ class StubClientHttpConnectorTest {
     }
 
     @Test
-    @AnySettingsHttp(allHeaders = true, bodyTrigger = "http")
+    @AnySettingsHttp(allHeaders = true)
     @AnyStubId()
     void TestGetRequest() throws JsonProcessingException {
         WebClient build = WebClient.builder()

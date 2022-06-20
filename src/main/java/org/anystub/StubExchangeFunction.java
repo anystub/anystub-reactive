@@ -15,11 +15,11 @@ public class StubExchangeFunction implements ExchangeFunction {
     private static final boolean reactorClientPresent;
     private static final boolean jettyClientPresent;
     private static final boolean httpComponentsClientPresent;
-    final ExchangeFunction real = ExchangeFunctions.create(new StubClientHttpConnector(initConnector()));
+    final ExchangeFunction proxyFunction = ExchangeFunctions.create(new StubClientHttpConnector(initConnector()));
 
     @Override
     public Mono<ClientResponse> exchange(ClientRequest request) {
-        return real.exchange(request);
+        return proxyFunction.exchange(request);
     }
     private ClientHttpConnector initConnector() {
         if (reactorClientPresent) {

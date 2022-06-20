@@ -1,26 +1,23 @@
 package org.anystub;
 
-import org.anystub.http.AnySettingsHttp;
-import org.anystub.http.AnySettingsHttpExtractor;
-import org.anystub.http.HttpUtil;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 
 import static java.util.Arrays.asList;
-import static org.anystub.http.HttpUtil.globalHeaders;
+import static org.anystub.HttpGlobalSettings.globalHeaders;
 
 public class HttpSettingsUtil {
 
     /**
-     * returns predicate to determine if header should be added to stub
+     * returns predicate to determine if a header should be added to stub
+     * uses test and global Settings
      *
      * @return Predicate
      */
     public static Predicate<String> filterHeaders() {
 
-        boolean currentAllHeaders = HttpUtil.globalAllHeaders;
+        boolean currentAllHeaders = HttpGlobalSettings.globalAllHeaders;
 
         AnySettingsHttp settings = AnySettingsHttpExtractor.discoverSettings();
 
