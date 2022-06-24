@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
@@ -41,7 +42,17 @@ public class StubClientHttpConnector implements ClientHttpConnector {
     }
 
 
+    /**
+     *
+     * @param headers
+     * @return
+     */
     public static List<String> filterHeaders(HttpHeaders headers){
+
+//        Predicate<String> stringPredicate = HttpSettingsUtil.filterHeaders();
+
+
+
         boolean currentAllHeaders = HttpGlobalSettings.globalAllHeaders;
         AnySettingsHttp settings = AnySettingsHttpExtractor.discoverSettings();
         if (settings != null) {
@@ -75,25 +86,11 @@ public class StubClientHttpConnector implements ClientHttpConnector {
     @Override
     public Mono<ClientHttpResponse> connect(HttpMethod method, URI uri, Function<? super ClientHttpRequest, Mono<Void>> requestCallback) {
 
-        MockClientHttpRequest mockClientHttpRequest = new MockClientHttpRequest(method, uri);
-//        BasicHttpRequest mockClientHttpRequest1 = new BasicHttpRequest(method.name(), uri);
-        requestCallback.apply(mockClientHttpRequest).block();
-        ArrayList<String> key = new ArrayList<>();
-        key.add(method.name());
-        key.add("HTTP/1.1");
-        key.addAll(filterHeaders(mockClientHttpRequest.getHeaders()));
-        key.add(uri.toString());
 
+        MockClientHttpRequest request = new MockClientHttpRequest(method, uri);
+        requestCallback.apply(request).block();
 
-        if (matchBodyRule(uri.toString())) {
-            String body = mockClientHttpRequest.getBodyAsString()
-                    .blockOptional().orElse("");
-            if (Util.isText(body)) {
-                key.add(escapeCharacterString(body));
-            } else {
-                key.add(toCharacterString(body.getBytes(StandardCharsets.UTF_8)));
-            }
-        }
+        ArrayList<String> key = getStrings(method, uri, request);
 
         return getBase()
                 .request2(
@@ -141,7 +138,7 @@ public class StubClientHttpConnector implements ClientHttpConnector {
                             List<String> headers = response.getHeaders()
                                     .keySet()
                                     .stream()
-                                    .filter(HttpSettingsUtil.filterHeaders())
+//                                    .filter(HttpSettingsUtil.filterHeaders())
                                     .sorted(String::compareTo)
                                     .map(h -> headerToString(response.getHeaders(), h))
                                     .collect(Collectors.toList());
@@ -161,14 +158,31 @@ public class StubClientHttpConnector implements ClientHttpConnector {
                 key.toArray(new String[0])
         );
 
+    }
+
+    static public ArrayList<String> getStrings(HttpMethod method, URI uri, MockClientHttpRequest request) {
+        ArrayList<String> key = new ArrayList<>();
+        key.add(method.name());
+        key.add("HTTP/1.1");
+        key.addAll(filterHeaders(request.getHeaders()));
+        key.add(uri.toString());
 
 
+        if (matchBodyRule(uri.toString())) {
+            String body = request.getBodyAsString()
+                    .blockOptional().orElse("");
+            if (Util.isText(body)) {
+                key.add(escapeCharacterString(body));
+            } else {
+                key.add(toCharacterString(body.getBytes(StandardCharsets.UTF_8)));
+            }
+        }
+        return key;
     }
 
 
     private Base getBase() {
         AnyStubId s = discoverFile();
-//        AnyStubId s = AnyStubFileLocator.discoverFile();
         if (s != null) {
             return BaseManagerFactory
                     .getBaseManager()
@@ -182,10 +196,7 @@ public class StubClientHttpConnector implements ClientHttpConnector {
                 .getBaseManager()
                 .getBase();
     }
-    public StubClientHttpConnector setFallbackBase(Base base) {
-        this.fallbackBase = base;
-        return this;
-    }
+
 
 
 

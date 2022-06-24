@@ -10,7 +10,7 @@ import static org.anystub.HttpGlobalSettings.globalHeaders;
 public class HttpSettingsUtil {
 
     /**
-     * returns predicate to determine if a header should be added to stub
+     * returns predicate which determines if a header should be added to stub
      * uses test and global Settings
      *
      * @return Predicate
