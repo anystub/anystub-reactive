@@ -268,9 +268,10 @@ class StubClientHttpConnector2Test {
 
     @Test
     @AnyStubId(requestMode = RequestMode.rmAll)
+    @AnySettingsHttp(bodyTrigger = "")
     void testBase64RequestResponse(WireMockRuntimeInfo wmRuntimeInfo){
         // The static DSL will be automatically configured for you
-        stubFor(WireMock.get("/")
+        stubFor(WireMock.post("/")
                 .willReturn(ok()
                         .withHeader("x-forward", "test")
                         .withHeader("Content-Type", MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -280,16 +281,29 @@ class StubClientHttpConnector2Test {
         // Info such as port numbers is also available
         int port = wmRuntimeInfo.getHttpPort();
         String block =
-                webClient.get()
+                webClient.post()
                         .uri("http://localhost:"+port)
-                        .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                        .header("Content-Type", MediaType.APPLICATION_OCTET_STREAM_VALUE)
                         .header("Accept", "application/x-ndjson", "plain/text", MediaType.ALL_VALUE)
+                        .bodyValue("body hex"+(char)0x2)
                         .retrieve()
                         .toEntity(String.class)
                         .block().getBody();
 
 
         Assertions.assertEquals("line1\nline2"+(char)0x01+"eom", block);
+
+        long times = BaseManagerFactory.locate()
+                .times();
+        Assertions.assertEquals(1, times);
+
+        Document document = BaseManagerFactory.locate()
+                .history()
+                .findFirst().get();
+
+        Assertions.assertTrue(document.getKey(-1).startsWith("BASE64"));
+        Assertions.assertTrue(document.getVal(-1).startsWith("BASE64"));
+
     }
 
 
