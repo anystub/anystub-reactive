@@ -3,5 +3,5 @@ request0:
   keys: [POST, HTTP/1.1, 'Accept: application/x-ndjson, plain/text, */*', 'http://localhost:8080',
     '{"code":23,"msg":"test msg","date":[2022,6,30]}']
   values: [HTTP/1.1, '200', OK, 'Content-Type: application/json', 'Matched-Stub-Id:
-      29990447-4533-4b15-826c-909c63d6947f', 'Transfer-Encoding: chunked', 'Vary:
+      89555027-8afa-413e-9644-49177b6f266a', 'Transfer-Encoding: chunked', 'Vary:
       Accept-Encoding, User-Agent', 'x-forward: test', '{"test":"ok"}']

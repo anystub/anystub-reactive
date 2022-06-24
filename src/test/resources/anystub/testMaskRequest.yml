@@ -3,5 +3,5 @@ request0:
   keys: [POST, HTTP/1.1, 'http://localhost:8080', '{"code":23,"msg":"hypothetical
       request containing a ... data like a ..., or a variable timestamp...request","date":[...]}']
   values: [HTTP/1.1, '200', OK, 'Content-Type: application/json', 'Matched-Stub-Id:
-      786b7206-245c-4247-91dc-67c92ac6846f', 'Transfer-Encoding: chunked', 'Vary:
+      e5670999-cff4-4aee-bd18-15aa654300d1', 'Transfer-Encoding: chunked', 'Vary:
       Accept-Encoding, User-Agent', 'x-forward: test', '{"test":"ok"}']
