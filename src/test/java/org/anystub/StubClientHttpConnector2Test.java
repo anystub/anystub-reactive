@@ -262,13 +262,34 @@ class StubClientHttpConnector2Test {
     }
 
     @Test
+    @AnySettingsHttp
     void testResponseHeaders() {
-
     }
 
     @Test
-    void testBase64RequestResponse(){
+    @AnyStubId(requestMode = RequestMode.rmAll)
+    void testBase64RequestResponse(WireMockRuntimeInfo wmRuntimeInfo){
+        // The static DSL will be automatically configured for you
+        stubFor(WireMock.get("/")
+                .willReturn(ok()
+                        .withHeader("x-forward", "test")
+                        .withHeader("Content-Type", MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                        .withBody("line1\nline2"+(char)0x01+"eom")));
 
+
+        // Info such as port numbers is also available
+        int port = wmRuntimeInfo.getHttpPort();
+        String block =
+                webClient.get()
+                        .uri("http://localhost:"+port)
+                        .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                        .header("Accept", "application/x-ndjson", "plain/text", MediaType.ALL_VALUE)
+                        .retrieve()
+                        .toEntity(String.class)
+                        .block().getBody();
+
+
+        Assertions.assertEquals("line1\nline2"+(char)0x01+"eom", block);
     }
 
 

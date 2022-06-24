@@ -4,6 +4,7 @@ import org.anystub.mgmt.BaseManagerFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ClientHttpRequest;
 import org.springframework.http.client.reactive.ClientHttpResponse;
@@ -12,22 +13,26 @@ import org.springframework.mock.http.client.reactive.MockClientHttpResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static org.anystub.AnyStubFileLocator.discoverFile;
 import static org.anystub.SettingsUtil.matchBodyRule;
-import static org.anystub.Util.escapeCharacterString;
-import static org.anystub.Util.toCharacterString;
+import static org.anystub.StringUtil.escapeCharacterString;
+import static org.anystub.StringUtil.toCharacterString;
 
 
 public class StubClientHttpConnector implements ClientHttpConnector {
@@ -120,7 +125,16 @@ public class StubClientHttpConnector implements ClientHttpConnector {
     //                        clientResponse.getCookies().putAll(response.getCookies());
 
                             if (postHeader != null) {
-                                clientResponse.setBody(postHeader);
+                                byte[] bytes = StringUtil.recoverBinaryData(postHeader);
+                                Charset charset = null;
+                                MediaType contentType = clientResponse.getHeaders().getContentType();
+                                if (contentType != null) {
+                                    charset = contentType.getCharset();
+                                }
+                                if (charset == null) {
+                                    charset = StandardCharsets.UTF_8;
+                                }
+                                clientResponse.setBody(new String(bytes, charset));
                             }
                             return Mono.just(clientResponse);
                         },
@@ -138,7 +152,6 @@ public class StubClientHttpConnector implements ClientHttpConnector {
                             List<String> headers = response.getHeaders()
                                     .keySet()
                                     .stream()
-//                                    .filter(HttpSettingsUtil.filterHeaders())
                                     .sorted(String::compareTo)
                                     .map(h -> headerToString(response.getHeaders(), h))
                                     .collect(Collectors.toList());
@@ -147,11 +160,28 @@ public class StubClientHttpConnector implements ClientHttpConnector {
 
                             Flux<DataBuffer> body = response.getBody();
 
-                            String collect = String.join("", body.map(d -> d.toString(StandardCharsets.UTF_8))
+                            List<byte[]> block = body.map(dataBuffer ->
+                                            StringUtil.readStream(dataBuffer.asInputStream(true)))
                                     .collectList()
-                                    .blockOptional().orElse(List.of()));
+                                    .block();
 
-                            res.add(collect);
+                            byte[] bodyContext;
+                            if (block == null || block.isEmpty()) {
+                                bodyContext = new byte[0];
+                            } else {
+                                bodyContext =
+                                        block.stream()
+                                                .reduce(new byte[0], (result, bytes2) -> {
+                                                    int v = result.length;
+                                                    result = Arrays.copyOf(result, v + bytes2.length);
+                                                    System.arraycopy(bytes2, 0, result, v, bytes2.length);
+                                                    return result;
+                                                });
+                            }
+
+
+
+                            res.add(toCharacterString(bodyContext));
 
                             return res;
                         },
@@ -172,7 +202,7 @@ public class StubClientHttpConnector implements ClientHttpConnector {
             String body = request.getBodyAsString()
                     .blockOptional().orElse("");
             body = SettingsUtil.maskBody(body);
-            if (Util.isText(body)) {
+            if (StringUtil.isText(body)) {
                 key.add(escapeCharacterString(body));
             } else {
                 key.add(toCharacterString(body.getBytes(StandardCharsets.UTF_8)));
