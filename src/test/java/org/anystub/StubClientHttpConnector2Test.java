@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
@@ -206,13 +207,53 @@ class StubClientHttpConnector2Test {
                 .history()
                 .findFirst().get();
 
-
     }
 
 
     @Test
-    void testMaskRequest() {
+    @AnyStubId(requestMode = RequestMode.rmAll)
+    @AnySettingsHttp(bodyTrigger = "", bodyMask = {"secret", "password", ": ....-.* ", "\\d{4},\\d{1,2},\\d{1,2}"})
+    void testMaskRequest(WireMockRuntimeInfo wmRuntimeInfo) {
+        // The static DSL will be automatically configured for you
+        stubFor(WireMock.post("/")
+                .willReturn(ok()
+                        .withHeader("x-forward", "test")
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("{\"test\":\"ok\"}")));
 
+
+        Request1 request1 = new Request1();
+        request1.code =23;
+        request1.msg = String.format("hypothetical request containing a secret data like a password, "+
+                        "or a variable timestamp: %s in the middle of request",
+                LocalDateTime.now().toString());
+        request1.date = LocalDate.now();
+
+
+        // Info such as port numbers is also available
+        int port = wmRuntimeInfo.getHttpPort();
+        String block =
+                webClient.post()
+                        .uri("http://localhost:"+port)
+                        .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                        .header("Accept", "application/x-ndjson", "plain/text", MediaType.ALL_VALUE)
+                        .bodyValue(request1)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
+
+        Assertions.assertEquals("{\"test\":\"ok\"}", block);
+
+        long times = BaseManagerFactory.locate()
+                .times();
+        Assertions.assertEquals(1, times);
+
+        Document document = BaseManagerFactory.locate()
+                .history()
+                .findFirst().get();
+
+        Assertions.assertTrue(document.key_to_string().contains("containing a ... data like a ..., or a variable timestamp...request"));
+        Assertions.assertTrue(document.key_to_string().contains("date\":[...]"), document.key_to_string());
     }
 
     @Test

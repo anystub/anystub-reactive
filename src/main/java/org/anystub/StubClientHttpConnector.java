@@ -171,6 +171,7 @@ public class StubClientHttpConnector implements ClientHttpConnector {
         if (matchBodyRule(uri.toString())) {
             String body = request.getBodyAsString()
                     .blockOptional().orElse("");
+            body = SettingsUtil.maskBody(body);
             if (Util.isText(body)) {
                 key.add(escapeCharacterString(body));
             } else {
