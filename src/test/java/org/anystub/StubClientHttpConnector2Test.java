@@ -4,19 +4,30 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import org.anystub.mgmt.BaseManagerFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 
 @WireMockTest(httpPort = 8080)
 class StubClientHttpConnector2Test {
@@ -306,6 +317,95 @@ class StubClientHttpConnector2Test {
 
     }
 
+
+    @RepeatedTest(3)
+    @AnyStubId(requestMode = RequestMode.rmNew)
+    void testRMNewMode(WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
+        BaseManagerFactory.locate().clear();
+        String filePath = BaseManagerFactory.locate().getFilePath();
+        Files.deleteIfExists(new File(filePath).toPath());
+
+        // The static DSL will be automatically configured for you
+        stubFor(WireMock.get("/").willReturn(ok()
+                .withBody("{\"test\":\"ok\"}")));
+
+
+        // Info such as port numbers is also available
+        int port = wmRuntimeInfo.getHttpPort();
+        String block =
+                webClient.get()
+                        .uri("http://localhost:"+port)
+                        .retrieve()
+                        .toEntityFlux(String.class)
+                        .block().getBody().collectList().block()
+                        .stream().collect(Collectors.joining());
+
+        Assertions.assertEquals("{\"test\":\"ok\"}", block);
+
+        String block2 =
+                webClient.get()
+                        .uri("http://localhost:"+port)
+                        .retrieve()
+                        .toEntityFlux(String.class)
+                        .block().getBody().collectList().block()
+                        .stream().collect(Collectors.joining());
+        Assertions.assertEquals(block, block2);
+
+        long times = BaseManagerFactory.locate()
+                .times();
+        Assertions.assertEquals(2, times);
+
+        long count = BaseManagerFactory.locate()
+                .history()
+                .count();
+
+        Assertions.assertEquals(2,count);
+
+        verify(1,getRequestedFor(urlPathEqualTo("/")));
+
+    }
+
+    @Test
+    @AnyStubId(requestMode = RequestMode.rmAll)
+    void testRMAllMode(WireMockRuntimeInfo wmRuntimeInfo) {
+        // The static DSL will be automatically configured for you
+        stubFor(WireMock.get("/").willReturn(ok()
+                .withBody("{\"test\":\"ok\"}")));
+
+
+        // Info such as port numbers is also available
+        int port = wmRuntimeInfo.getHttpPort();
+        String block =
+                webClient.get()
+                        .uri("http://localhost:"+port)
+                        .retrieve()
+                        .toEntityFlux(String.class)
+                        .block().getBody().collectList().block()
+                        .stream().collect(Collectors.joining());
+
+        Assertions.assertEquals("{\"test\":\"ok\"}", block);
+
+        String block2 =
+                webClient.get()
+                        .uri("http://localhost:"+port)
+                        .retrieve()
+                        .toEntityFlux(String.class)
+                        .block().getBody().collectList().block()
+                        .stream().collect(Collectors.joining());
+        Assertions.assertEquals(block, block2);
+
+        long times = BaseManagerFactory.locate()
+                .times();
+        Assertions.assertEquals(2, times);
+
+        long count = BaseManagerFactory.locate()
+                .history()
+                .count();
+
+        Assertions.assertEquals(2,count);
+
+        verify(2,getRequestedFor(urlPathEqualTo("/")));
+    }
 
 
 
