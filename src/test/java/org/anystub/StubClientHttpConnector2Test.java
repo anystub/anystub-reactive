@@ -4,11 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import org.anystub.mgmt.BaseManagerFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -19,13 +17,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 
@@ -101,6 +98,18 @@ class StubClientHttpConnector2Test {
                 .findFirst().get();
 
         Assertions.assertTrue(document.matchEx_to(null, null, "Accept:.*"));
+
+        ArrayList<String> objects = new ArrayList<>();
+        document.getVals().forEach(objects::add);
+
+        String s1;
+        s1 = objects.stream().filter(s -> s.startsWith("Content-Type"))
+                .findFirst().get();
+        Assertions.assertEquals("Content-Type: application/json", s1);
+
+        s1 = objects.stream().filter(s -> s.startsWith("x-forward"))
+                .findFirst().get();
+        Assertions.assertEquals("x-forward: test", s1);
 
     }
 
@@ -265,16 +274,6 @@ class StubClientHttpConnector2Test {
 
         Assertions.assertTrue(document.key_to_string().contains("containing a ... data like a ..., or a variable timestamp...request"));
         Assertions.assertTrue(document.key_to_string().contains("date\":[...]"), document.key_to_string());
-    }
-
-    @Test
-    void testResponseBody() {
-
-    }
-
-    @Test
-    @AnySettingsHttp
-    void testResponseHeaders() {
     }
 
     @Test
