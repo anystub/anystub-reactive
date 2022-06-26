@@ -406,6 +406,37 @@ class StubClientHttpConnector2Test {
         verify(2,getRequestedFor(urlPathEqualTo("/")));
     }
 
+   @Test
+    @AnyStubId(requestMode = RequestMode.rmAll)
+    void testHeaderLikeResponseBody(WireMockRuntimeInfo wmRuntimeInfo) {
+        // The static DSL will be automatically configured for you
+        stubFor(WireMock.get("/").willReturn(ok()
+                .withHeader("Content-Type", MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                .withBody("Content-Type: ok")));
+
+
+        // Info such as port numbers is also available
+        int port = wmRuntimeInfo.getHttpPort();
+        String block =
+                webClient.get()
+                        .uri("http://localhost:"+port)
+                        .retrieve()
+                        .toEntityFlux(String.class)
+                        .block().getBody().collectList().block()
+                        .stream().collect(Collectors.joining());
+
+        Assertions.assertEquals("Content-Type: ok", block);
+
+
+        Document document = BaseManagerFactory.locate()
+                .history()
+                .findFirst()
+                .get();
+
+        Assertions.assertEquals("TEXT Content-Type: ok", document.getVal(-1));
+
+    }
+
 
 
 }

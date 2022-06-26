@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import static java.util.Arrays.asList;
 import static org.anystub.AnyStubFileLocator.discoverFile;
 import static org.anystub.SettingsUtil.matchBodyRule;
+import static org.anystub.StringUtil.addTextPrefix;
 import static org.anystub.StringUtil.escapeCharacterString;
 import static org.anystub.StringUtil.toCharacterString;
 
@@ -180,8 +181,11 @@ public class StubClientHttpConnector implements ClientHttpConnector {
                             }
 
 
-
-                            res.add(toCharacterString(bodyContext));
+                            String bodyString = toCharacterString(bodyContext);
+                            if(bodyString.matches(HEADER_MASK)) {
+                                bodyString = addTextPrefix(bodyString);
+                            }
+                            res.add(bodyString);
 
                             return res;
                         },
