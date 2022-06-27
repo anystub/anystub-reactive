@@ -1,0 +1,7 @@
+request0:
+  exception: []
+  keys: [POST, HTTP/1.1, 'http://localhost:8080', '{"code":23,"msg":"hypothetical
+      request containing a ... data like a ..., or a variable timestamp...request","date":[...]}']
+  values: [HTTP/1.1, '200', OK, 'Content-Type: application/json', 'Matched-Stub-Id:
+      b37ed732-a853-4087-9969-61c082620bab', 'Transfer-Encoding: chunked', 'Vary:
+      Accept-Encoding, User-Agent', 'x-forward: test', '{"test":"ok"}']

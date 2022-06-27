@@ -15,11 +15,11 @@ public class StubExchangeFunction implements ExchangeFunction {
     private static final boolean reactorClientPresent;
     private static final boolean jettyClientPresent;
     private static final boolean httpComponentsClientPresent;
-    final ExchangeFunction real = ExchangeFunctions.create(new StubClientHttpConnector(initConnector()));
+    final ExchangeFunction proxyFunction = ExchangeFunctions.create(new StubClientHttpConnector(initConnector()));
 
     @Override
     public Mono<ClientResponse> exchange(ClientRequest request) {
-        return real.exchange(request);
+        return proxyFunction.exchange(request);
     }
     private ClientHttpConnector initConnector() {
         if (reactorClientPresent) {
@@ -36,7 +36,7 @@ public class StubExchangeFunction implements ExchangeFunction {
     static {
         ClassLoader loader = StubExchangeFunction.class.getClassLoader();
         reactorClientPresent = ClassUtils.isPresent("reactor.netty.http.client.HttpClient", loader);
-        jettyClientPresent = false;//ClassUtils.isPresent("org.eclipse.jetty.client.HttpClient", loader);
-        httpComponentsClientPresent = false;//ClassUtils.isPresent("org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient", loader) && ClassUtils.isPresent("org.apache.hc.core5.reactive.ReactiveDataConsumer", loader);
+        jettyClientPresent = ClassUtils.isPresent("org.eclipse.jetty.client.HttpClient", loader);
+        httpComponentsClientPresent = ClassUtils.isPresent("org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient", loader) && ClassUtils.isPresent("org.apache.hc.core5.reactive.ReactiveDataConsumer", loader);
     }
 }
