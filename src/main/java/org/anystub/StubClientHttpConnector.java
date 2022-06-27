@@ -89,7 +89,7 @@ public class StubClientHttpConnector implements ClientHttpConnector {
         MockClientHttpRequest request = new MockClientHttpRequest(method, uri);
         requestCallback.apply(request).block();
 
-        ArrayList<String> key = getStrings(method, uri, request);
+        List<String> key = getStrings(method, uri, request);
 
         return getBase()
                 .request2(
