@@ -13,10 +13,7 @@ import org.springframework.mock.http.client.reactive.MockClientHttpResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -54,10 +51,6 @@ public class StubClientHttpConnector implements ClientHttpConnector {
      * @return
      */
     public static List<String> filterHeaders(HttpHeaders headers){
-
-//        Predicate<String> stringPredicate = HttpSettingsUtil.filterHeaders();
-
-
 
         boolean currentAllHeaders = HttpGlobalSettings.globalAllHeaders;
         AnySettingsHttp settings = AnySettingsHttpExtractor.discoverSettings();
@@ -122,8 +115,6 @@ public class StubClientHttpConnector implements ClientHttpConnector {
                                 int i = header.indexOf(": ");
                                 clientResponse.getHeaders().set(header.substring(0, i), header.substring(i + 2));
                             }
-    //
-    //                        clientResponse.getCookies().putAll(response.getCookies());
 
                             if (postHeader != null) {
                                 byte[] bytes = StringUtil.recoverBinaryData(postHeader);
@@ -194,7 +185,7 @@ public class StubClientHttpConnector implements ClientHttpConnector {
 
     }
 
-    static public ArrayList<String> getStrings(HttpMethod method, URI uri, MockClientHttpRequest request) {
+    public static List<String> getStrings(HttpMethod method, URI uri, MockClientHttpRequest request) {
         ArrayList<String> key = new ArrayList<>();
         key.add(method.name());
         key.add("HTTP/1.1");

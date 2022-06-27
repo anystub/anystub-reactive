@@ -9,6 +9,9 @@ import static org.anystub.HttpGlobalSettings.globalHeaders;
 
 public class HttpSettingsUtil {
 
+    private HttpSettingsUtil() {
+
+    }
     /**
      * returns predicate which determines if a header should be added to stub
      * uses test and global Settings
