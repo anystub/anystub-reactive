@@ -18,7 +18,7 @@ public class StubExchangeFunction implements ExchangeFunction {
     final ExchangeFunction proxyFunction;
 
     public StubExchangeFunction() {
-        this.proxyFunction = ExchangeFunctions.create(new StubClientHttpConnector(initConnector()));
+        this(initConnector());
     }
 
     public StubExchangeFunction(ClientHttpConnector connector) {
@@ -31,7 +31,7 @@ public class StubExchangeFunction implements ExchangeFunction {
     public Mono<ClientResponse> exchange(ClientRequest request) {
         return proxyFunction.exchange(request);
     }
-    private ClientHttpConnector initConnector() {
+    private static ClientHttpConnector initConnector() {
         if (reactorClientPresent) {
             return new ReactorClientHttpConnector();
         } else if (jettyClientPresent) {
