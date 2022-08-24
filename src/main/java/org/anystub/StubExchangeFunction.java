@@ -23,7 +23,7 @@ public class StubExchangeFunction implements ExchangeFunction {
     }
 
     public StubExchangeFunction(ClientHttpConnector connector) {
-        this(new StubClientHttpConnector(connector), ExchangeStrategies.withDefaults());
+        this(connector, ExchangeStrategies.withDefaults());
     }
     public StubExchangeFunction(ClientHttpConnector connector, ExchangeStrategies strategies) {
         this.proxyFunction = ExchangeFunctions.create(new StubClientHttpConnector(connector), strategies);
