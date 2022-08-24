@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.ExchangeFunctions;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import reactor.core.publisher.Mono;
 
 public class StubExchangeFunction implements ExchangeFunction {
@@ -22,7 +23,10 @@ public class StubExchangeFunction implements ExchangeFunction {
     }
 
     public StubExchangeFunction(ClientHttpConnector connector) {
-        this.proxyFunction = ExchangeFunctions.create(new StubClientHttpConnector(connector));
+        this(new StubClientHttpConnector(connector), ExchangeStrategies.withDefaults());
+    }
+    public StubExchangeFunction(ClientHttpConnector connector, ExchangeStrategies strategies) {
+        this.proxyFunction = ExchangeFunctions.create(new StubClientHttpConnector(connector), strategies);
     }
 
 
