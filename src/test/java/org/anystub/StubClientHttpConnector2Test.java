@@ -183,7 +183,9 @@ class StubClientHttpConnector2Test {
                 .history()
                 .findFirst().get();
 
-//        Assertions.assertTrue(document.matchEx_to(null, null, "Accept:.*"));
+        Assertions.assertTrue(document.matchEx_to(null, null,
+                "Accept:.*", null,
+                ".*test msg.*"));
 
     }
 
