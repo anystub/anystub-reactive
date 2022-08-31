@@ -24,6 +24,9 @@ import static org.anystub.StringUtil.toCharacterString;
 public class Util {
     public static final String HEADER_MASK = "^[A-Za-z0-9\\-]+: .+";
 
+    private Util() {
+    }
+
     /**
      *
      * @param headers

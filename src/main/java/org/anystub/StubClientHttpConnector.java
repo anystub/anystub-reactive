@@ -22,7 +22,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.anystub.AnyStubFileLocator.discoverFile;
-import static org.anystub.StringUtil.toCharacterString;
 import static org.anystub.Util.HEADER_MASK;
 
 
