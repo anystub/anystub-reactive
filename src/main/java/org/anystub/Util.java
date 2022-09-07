@@ -5,6 +5,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.http.client.reactive.MockClientHttpRequest;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 import static org.anystub.SettingsUtil.matchBodyRule;
@@ -28,11 +30,10 @@ public class Util {
     }
 
     /**
-     *
      * @param headers
      * @return
      */
-    public static List<String> filterHeaders(HttpHeaders headers){
+    public static List<String> filterHeaders(HttpHeaders headers) {
 
         boolean currentAllHeaders = HttpGlobalSettings.globalAllHeaders;
         AnySettingsHttp settings = AnySettingsHttpExtractor.discoverSettings();
@@ -41,7 +42,7 @@ public class Util {
         }
 
         Set<String> headersToAdd = new TreeSet<>();
-        if(currentAllHeaders) {
+        if (currentAllHeaders) {
             headersToAdd.addAll(headers.keySet());
         } else {
             if (settings != null) {
@@ -54,7 +55,7 @@ public class Util {
 
 
         return headersToAdd.stream()
-                .map(h-> headerToString(headers, h))
+                .map(h -> headerToString(headers, h))
                 .sorted()
                 .collect(Collectors.toList());
     }
@@ -64,52 +65,57 @@ public class Util {
     }
 
 
-    public static String extractString(Flux<DataBuffer> body) {
-        List<byte[]> block = body.map(dataBuffer ->
+    public static Mono<String> extractStringMono(Flux<DataBuffer> body) {
+        return body.map(dataBuffer ->
                         StringUtil.readStream(dataBuffer.asInputStream(true)))
                 .collectList()
-                .block();
-
-        byte[] bodyContext;
-        if (block == null || block.isEmpty()) {
-            bodyContext = new byte[0];
-        } else {
-            bodyContext =
-                    block.stream()
-                            .reduce(new byte[0], (result, bytes2) -> {
-                                int v = result.length;
-                                result = Arrays.copyOf(result, v + bytes2.length);
-                                System.arraycopy(bytes2, 0, result, v, bytes2.length);
-                                return result;
-                            });
-        }
-
-
-        String bodyString = toCharacterString(bodyContext);
-        if(bodyString.matches(HEADER_MASK)) {
-            bodyString = addTextPrefix(bodyString);
-        }
-        return bodyString;
+                .map(block -> {
+                    if (block == null || block.isEmpty()) {
+                        return new byte[0];
+                    } else {
+                        return
+                                block.stream()
+                                        .reduce(new byte[0], (result, bytes2) -> {
+                                            int v = result.length;
+                                            result = Arrays.copyOf(result, v + bytes2.length);
+                                            System.arraycopy(bytes2, 0, result, v, bytes2.length);
+                                            return result;
+                                        });
+                    }
+                })
+                .map(bodyContext -> {
+                    String bodyString = toCharacterString(bodyContext);
+                    if (bodyString.matches(HEADER_MASK)) {
+                        bodyString = addTextPrefix(bodyString);
+                    }
+                    return bodyString;
+                });
     }
 
-    public static List<String> getStrings(HttpMethod method, URI uri, MockClientHttpRequest request) {
+    public static Mono<List<String>> getStringsMono(HttpMethod method, URI uri, MockClientHttpRequest request) {
         ArrayList<String> key = new ArrayList<>();
         key.add(method.name());
         key.add("HTTP/1.1");
         key.addAll(filterHeaders(request.getHeaders()));
         key.add(uri.toString());
 
+        return Mono.just(key.toArray(new String[0]))
+                .flatMap(keys -> {
+                    if (!matchBodyRule(uri.toString())) {
+                        return Mono.just(List.of(keys));
+                    }
+                    return request.getBodyAsString()
+                            .switchIfEmpty(Mono.just(""))
+                            .map((String body) -> {
+                                String maskedBody = SettingsUtil.maskBody(body);
+                                String safeBody = StringUtil.isText(maskedBody) ?
+                                        escapeCharacterString(maskedBody) :
+                                        toCharacterString(maskedBody.getBytes(StandardCharsets.UTF_8));
 
-        if (matchBodyRule(uri.toString())) {
-            String body = request.getBodyAsString()
-                    .blockOptional().orElse("");
-            body = SettingsUtil.maskBody(body);
-            if (StringUtil.isText(body)) {
-                key.add(escapeCharacterString(body));
-            } else {
-                key.add(toCharacterString(body.getBytes(StandardCharsets.UTF_8)));
-            }
-        }
-        return key;
+                                return Stream.concat(Stream.of(keys), Stream.of(safeBody))
+                                        .collect(Collectors.toList());
+                            });
+
+                });
     }
 }

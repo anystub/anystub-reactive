@@ -28,7 +28,6 @@ import static org.anystub.Util.HEADER_MASK;
 public class StubClientHttpConnector implements ClientHttpConnector {
 
 
-
     final ClientHttpConnector real;
     private Base fallbackBase = null;
 
@@ -42,79 +41,105 @@ public class StubClientHttpConnector implements ClientHttpConnector {
 
 
         MockClientHttpRequest request = new MockClientHttpRequest(method, uri);
-        requestCallback.apply(request).block();
+        Mono<MockClientHttpRequest> requestMono =
+                requestCallback
+                        .apply(request)
+                        .then(Mono.defer(() -> Mono.just(request)
+                                .cache()));
 
-        List<String> key = Util.getStrings(method, uri, request);
 
-        return getBase()
-                .request2(
-                        () -> real.connect(method, uri, requestCallback),
-                        (Iterable<String> iterable) -> {
-                            Iterator<String> iterator = iterable.iterator();
-                            String[] protocol = iterator.next().split("[/.]");
-                            String code = iterator.next();
-                            String reason = iterator.next();
+        final Base base = getBase();
 
-                            MockClientHttpResponse clientResponse =
-                                    new MockClientHttpResponse(Integer.parseInt(code));
 
-                            String postHeader = null;
-                            while (iterator.hasNext()) {
-                                String header;
-                                header = iterator.next();
-                                if (!header.matches(HEADER_MASK)) {
-                                    postHeader = header;
-                                    break;
-                                }
+        return requestMono
+                .flatMap(clientHttpRequest -> Util.getStringsMono(method, uri, clientHttpRequest))
+                .flatMap(new Function<List<String>, Mono<ClientHttpResponse>>() {
+                    @Override
+                    public Mono<ClientHttpResponse> apply(List<String> key) {
+                        return base
+                                .request2(
+                                        () -> real.connect(method, uri, requestCallback),
+                                        (Iterable<String> iterable) -> Mono.just(decode(iterable)),
 
-                                int i = header.indexOf(": ");
-                                clientResponse.getHeaders().set(header.substring(0, i), header.substring(i + 2));
-                            }
+                                        (clientHttpResponseMono, decoderFunction) -> clientHttpResponseMono
+                                                .flatMap((ClientHttpResponse response) -> encode(response))
+                                                .flatMap((Iterable<String> strings) -> decoderFunction.apply(strings)),
+                                        new KeysSupplier() {
+                                            @Override
+                                            public String[] get() {
+                                                return key.toArray(new String[0]);
+                                            }
+                                        }
+                                );
+                    }
+                });
 
-                            if (postHeader != null) {
-                                byte[] bytes = StringUtil.recoverBinaryData(postHeader);
-                                Charset charset = null;
-                                MediaType contentType = clientResponse.getHeaders().getContentType();
-                                if (contentType != null) {
-                                    charset = contentType.getCharset();
-                                }
-                                if (charset == null) {
-                                    charset = StandardCharsets.UTF_8;
-                                }
-                                clientResponse.setBody(new String(bytes, charset));
-                            }
-                            return Mono.just(clientResponse);
-                        },
-                        (Mono<ClientHttpResponse> clientHttpResponseMono) -> {
-                            List<String> res = new ArrayList<>();
-                            ClientHttpResponse response = clientHttpResponseMono.block();
-                            if (response == null) {
-                                return res;
-                            }
+    }
 
-                            res.add("HTTP/1.1");
-                            res.add(Integer.toString(response.getRawStatusCode()));
-                            res.add(response.getStatusCode().getReasonPhrase());
 
-                            List<String> headers = response.getHeaders()
-                                    .keySet()
-                                    .stream()
-                                    .sorted(String::compareTo)
-                                    .map(h -> Util.headerToString(response.getHeaders(), h))
-                                    .collect(Collectors.toList());
+    private static ClientHttpResponse decode(Iterable<String> iterable) {
+        Iterator<String> iterator = iterable.iterator();
+        String[] protocol = iterator.next().split("[/.]");
+        String code = iterator.next();
+        String reason = iterator.next();
 
-                            res.addAll(headers);
+        MockClientHttpResponse clientResponse =
+                new MockClientHttpResponse(Integer.parseInt(code));
 
-                            Flux<DataBuffer> body = response.getBody();
+        String postHeader = null;
+        while (iterator.hasNext()) {
+            String header;
+            header = iterator.next();
+            if (!header.matches(HEADER_MASK)) {
+                postHeader = header;
+                break;
+            }
 
-                            String bodyString = Util.extractString(body);
-                            res.add(bodyString);
+            int i = header.indexOf(": ");
+            clientResponse.getHeaders().set(header.substring(0, i), header.substring(i + 2));
+        }
 
-                            return res;
-                        },
-                key.toArray(new String[0])
-        );
+        if (postHeader != null) {
+            byte[] bytes = StringUtil.recoverBinaryData(postHeader);
+            Charset charset = null;
+            MediaType contentType = clientResponse.getHeaders().getContentType();
+            if (contentType != null) {
+                charset = contentType.getCharset();
+            }
+            if (charset == null) {
+                charset = StandardCharsets.UTF_8;
+            }
+            clientResponse.setBody(new String(bytes, charset));
+        }
+        return clientResponse;
+    }
 
+    private static Mono<Iterable<String>> encode(ClientHttpResponse response) {
+        List<String> res = new ArrayList<>();
+        if (response == null) {
+            return Mono.just(res);
+        }
+
+        res.add("HTTP/1.1");
+        res.add(Integer.toString(response.getRawStatusCode()));
+        res.add(response.getStatusCode().getReasonPhrase());
+
+        List<String> headers = response.getHeaders()
+                .keySet()
+                .stream()
+                .sorted(String::compareTo)
+                .map(h -> Util.headerToString(response.getHeaders(), h))
+                .collect(Collectors.toList());
+
+        res.addAll(headers);
+
+        Flux<DataBuffer> body = response.getBody();
+
+        return Util.extractStringMono(body)
+                .map(bodyString -> {
+                    res.add(bodyString);
+                    return res;
+                });
     }
 
 
@@ -133,8 +158,6 @@ public class StubClientHttpConnector implements ClientHttpConnector {
                 .getBaseManager()
                 .getBase();
     }
-
-
 
 
 }
