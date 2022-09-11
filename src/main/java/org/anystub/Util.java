@@ -1,11 +1,15 @@
 package org.anystub;
 
+import org.anystub.mgmt.BaseManagerFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.http.client.reactive.MockClientHttpRequest;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifierOptions;
+import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -118,4 +122,15 @@ public class Util {
 
                 });
     }
+
+    public static ContextView anystubContext() {
+        return Context.of(Base.class, BaseManagerFactory.locate());
+    }
+
+    public static StepVerifierOptions anystubOptions() {
+        return StepVerifierOptions
+                .create()
+                .withInitialContext(Context.empty().putAll(anystubContext()));
+    }
+
 }

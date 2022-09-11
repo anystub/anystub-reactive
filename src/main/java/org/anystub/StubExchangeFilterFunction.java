@@ -5,6 +5,7 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ClientHttpResponse;
 import org.springframework.mock.http.client.reactive.MockClientHttpRequest;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.ClientRequest;
@@ -29,45 +30,47 @@ import static org.anystub.Util.HEADER_MASK;
 import static org.anystub.Util.headerToString;
 
 public class StubExchangeFilterFunction implements ExchangeFilterFunction {
+
+    private final RequestCache<ClientResponse> cache = new RequestCache<>();
     @Override
     public Mono<ClientResponse> filter(ClientRequest request, ExchangeFunction next) {
         HttpMethod method = request.method();
         URI uri = request.url();
 
         MockClientHttpRequest mockClientHttpRequest = new MockClientHttpRequest(method, uri);
-        Mono<MockClientHttpRequest> requestMono = request.writeTo(mockClientHttpRequest, ExchangeStrategies.withDefaults())
-                .then(Mono.defer(() -> Mono.just(mockClientHttpRequest)
-                        .cache()));
-
-        final Base base = getBase();
+        Mono<MockClientHttpRequest> requestMono = request
+                .writeTo(mockClientHttpRequest, ExchangeStrategies.withDefaults())
+                .then(Mono.defer(() -> Mono.just(mockClientHttpRequest)))
+                .cache();
 
         return requestMono
-                .flatMap(mockClientHttpRequest1 -> Util.getStringsMono(method, uri, mockClientHttpRequest1))
-                .flatMap(new Function<List<String>, Mono<ClientResponse>>() {
-                    @Override
-                    public Mono<ClientResponse> apply(List<String> key) {
-                        return base.request2(
-                                () -> next.exchange(request),
-//                                () -> requestMono.flatMap(r->next.exchange(r)), @todo: prevent double usage
-                                values -> Mono.just(decode(values)),
-                                new Inverter<Mono<ClientResponse>>() {
-                                    @Override
-                                    public Mono<ClientResponse> invert(Mono<ClientResponse> clientResponseMono, Function<Iterable<String>, Mono<ClientResponse>> decoderFunction) {
-                                        return clientResponseMono
-                                                .flatMap((ClientResponse clientResponse) -> encode(clientResponse))
-                                                .flatMap((Iterable<String> strings) -> decoderFunction.apply(strings));
-                                    }
-                                },
-                                new KeysSupplier() {
-                                    @Override
-                                    public String[] get() {
-                                        return key.toArray(new String[0]);
-                                    }
-                                }
+                .flatMap(mockClientHttpRequest1 -> Util
+                        .getStringsMono(method, uri, mockClientHttpRequest1))
+                .flatMap((Function<List<String>, Mono<ClientResponse>>) key ->
+                        Mono.deferContextual(ctx -> {
+                            Base base = ctx.getOrDefault(Base.class, BaseManagerFactory.locate());
 
-                        );
-                    }
-                });
+                            Mono<ClientResponse> candidate = base.request2(
+                                    () -> next.exchange(request),
+                                    values -> Mono.just(decode(values)),
+                                    new Inverter<Mono<ClientResponse>>() {
+                                        @Override
+                                        public Mono<ClientResponse> invert(Mono<ClientResponse> clientResponseMono, Function<Iterable<String>, Mono<ClientResponse>> decoderFunction) {
+                                            return clientResponseMono
+                                                    .flatMap((ClientResponse clientResponse) -> encode(clientResponse))
+                                                    .flatMap((Iterable<String> strings) -> decoderFunction.apply(strings));
+                                        }
+                                    },
+                                    new KeysSupplier() {
+                                        @Override
+                                        public String[] get() {
+                                            return key.toArray(new String[0]);
+                                        }
+                                    }
+
+                            );
+                            return cache.track(base, key, candidate);
+                        }));
 
     }
 
