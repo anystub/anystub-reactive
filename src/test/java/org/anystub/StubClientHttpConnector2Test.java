@@ -7,10 +7,13 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import org.anystub.mgmt.BaseManagerFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +21,9 @@ import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
@@ -25,6 +31,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static java.util.Arrays.asList;
+import static org.anystub.Util.anystubOptions;
 
 @WireMockTest(httpPort = 8080)
 class StubClientHttpConnector2Test {
@@ -369,7 +377,6 @@ class StubClientHttpConnector2Test {
     @Test
     @AnyStubId(requestMode = RequestMode.rmAll)
     void testRMAllMode(WireMockRuntimeInfo wmRuntimeInfo) {
-        // The static DSL will be automatically configured for you
         stubFor(WireMock.get("/").willReturn(ok()
                 .withBody("{\"test\":\"ok\"}")));
 
@@ -439,6 +446,137 @@ class StubClientHttpConnector2Test {
 
     }
 
+
+    @Test
+    @AnyStubId(requestMode = RequestMode.rmAll)
+    void passStubInContext(WireMockRuntimeInfo wmRuntimeInfo) {
+        // The static DSL will be automatically configured for you
+        stubFor(WireMock.get("/").willReturn(ok()
+                .withBody("{\"test\":\"ok\"}")));
+
+
+        // Info such as port numbers is also available
+        int port = wmRuntimeInfo.getHttpPort();
+        Mono<String> blockMono =
+                webClient.get()
+                        .uri("http://localhost:" + port)
+                        .retrieve()
+                        .toEntityFlux(String.class)
+                        .flatMap(response -> response.getBody().collectList())
+                        .map(strings -> String.join("", strings));
+
+        StepVerifier.create(blockMono.single(),
+                        anystubOptions())
+                .expectNextMatches(block -> {
+                            Assertions.assertEquals("{\"test\":\"ok\"}", block);
+                            return true;
+                        }
+
+                )
+                .verifyComplete();
+
+
+        long times = BaseManagerFactory.locate()
+                .times();
+        Assertions.assertEquals(1, times);
+
+        long count = BaseManagerFactory.locate()
+                .history()
+                .count();
+
+        Assertions.assertEquals(1,count);
+
+        verify(1,getRequestedFor(urlPathEqualTo("/")));
+    }
+
+    @Test
+    @Disabled
+    @AnyStubId(requestMode = RequestMode.rmNew)
+    void testAsync(WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
+        File stubFile = new File(BaseManagerFactory.locate().getFilePath());
+        Files.deleteIfExists(stubFile.toPath());
+
+        try (AutoCloseable x = BaseManagerFactory.setMtFallback()) {
+            stubFor(WireMock.get("/").willReturn(ok()
+                    .withBody("{\"test\":\"ok\"}")));
+
+
+            // Info such as port numbers is also available
+            int port = wmRuntimeInfo.getHttpPort();
+            Mono<String> blockMono1 =
+                    webClient.get()
+                            .uri("http://localhost:" + port)
+                            .retrieve()
+                            .toEntityFlux(String.class)
+                            .flatMap(response -> response.getBody().collectList())
+                            .map(strings -> String.join("", strings));
+
+            Mono<String> blockMono2 =
+                    webClient.get()
+                            .uri("http://localhost:" + port)
+                            .retrieve()
+                            .toEntityFlux(String.class)
+                            .flatMap(response -> response.getBody().collectList())
+                            .map(strings -> String.join("", strings));
+
+
+            CompletableFuture.allOf(blockMono1.toFuture(),
+                    blockMono2.toFuture()).join();
+
+
+            // @todo: two independent Monos hit ext system independently as can't see/wait each others response
+            verify(1, getRequestedFor(urlPathEqualTo("/")));
+        }
+    }
+
+    @Test
+    @Disabled
+    @AnyStubId(requestMode = RequestMode.rmNew)
+    void testRepeatedCall(WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
+
+
+        File stubFile = new File(BaseManagerFactory.locate().getFilePath());
+        Files.deleteIfExists(stubFile.toPath());
+
+        stubFor(WireMock.get("/").willReturn(ok()
+                .withFixedDelay(300)
+                .withBody("{\"test\":\"ok\"}")));
+
+
+        // Info such as port numbers is also available
+        int port = wmRuntimeInfo.getHttpPort();
+        Mono<String> blockMono = Mono
+                .just(1)
+                .repeat(10)
+                .flatMap((v) ->
+                        webClient.get()
+                                .uri("http://localhost:" + port)
+                                .retrieve()
+                                .toEntityFlux(String.class)
+                                .flatMap(response -> response.getBody().collectList())
+                                .map(strings -> String.join("", strings)))
+                .last();
+
+        StepVerifier.create(blockMono.single(),
+                        anystubOptions())
+                .expectNextMatches(block -> {
+                    Assertions.assertEquals("{\"test\":\"ok\"}", block);
+                            return true;
+                        }
+
+                )
+                .verifyComplete();
+
+
+
+        long times = BaseManagerFactory.locate()
+                .times();
+        Assertions.assertEquals(1, times);
+
+        // @todo: intend to have only one call to real system,
+        // but reactor runs many calls simultaneously, before earlier calls ended
+        verify(1,getRequestedFor(urlPathEqualTo("/")));
+    }
 
 
 }

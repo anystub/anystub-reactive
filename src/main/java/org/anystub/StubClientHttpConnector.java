@@ -18,10 +18,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.anystub.AnyStubFileLocator.discoverFile;
 import static org.anystub.Util.HEADER_MASK;
 
 
@@ -29,62 +30,65 @@ public class StubClientHttpConnector implements ClientHttpConnector {
 
 
     final ClientHttpConnector real;
-    private Base fallbackBase = null;
+
+    private final RequestCache<ClientHttpResponse> cache = new RequestCache<>();
 
     public StubClientHttpConnector(ClientHttpConnector real) {
         this.real = real;
     }
-
 
     @Override
     public Mono<ClientHttpResponse> connect(HttpMethod method, URI uri, Function<? super ClientHttpRequest, Mono<Void>> requestCallback) {
 
 
         MockClientHttpRequest request = new MockClientHttpRequest(method, uri);
-        Mono<MockClientHttpRequest> requestMono =
-                requestCallback
-                        .apply(request)
-                        .then(Mono.defer(() -> Mono.just(request)
-                                .cache()));
-
-
-        final Base base = getBase();
+        Mono<MockClientHttpRequest> requestMono = requestCallback
+                .apply(request)
+                .then(Mono.defer(() ->
+                        Mono.just(request).cache()));
 
 
         return requestMono
-                .flatMap(clientHttpRequest -> Util.getStringsMono(method, uri, clientHttpRequest))
-                .flatMap(new Function<List<String>, Mono<ClientHttpResponse>>() {
-                    @Override
-                    public Mono<ClientHttpResponse> apply(List<String> key) {
-                        return base
-                                .request2(
-                                        () -> real.connect(method, uri, requestCallback),
-                                        (Iterable<String> iterable) -> Mono.just(decode(iterable)),
+                .flatMap(clientHttpRequest -> Util
+                        .getStringsMono(method, uri, clientHttpRequest))
+                .flatMap((Function<List<String>, Mono<ClientHttpResponse>>) key ->
+                        Mono.deferContextual(ctx -> {
+                            Base base = ctx.getOrDefault(Base.class, BaseManagerFactory.locate());
 
-                                        (clientHttpResponseMono, decoderFunction) -> clientHttpResponseMono
-                                                .flatMap((ClientHttpResponse response) -> encode(response))
-                                                .flatMap((Iterable<String> strings) -> decoderFunction.apply(strings)),
-                                        new KeysSupplier() {
-                                            @Override
-                                            public String[] get() {
-                                                return key.toArray(new String[0]);
-                                            }
+                            Mono<ClientHttpResponse> candidate = base.request2(() -> real.connect(method, uri, requestCallback),
+                                    (Iterable<String> iterable) -> Mono.just(decode(iterable)),
+
+                                    (clientHttpResponseMono, decoderFunction) ->
+                                            clientHttpResponseMono
+                                                    .flatMap((ClientHttpResponse response) ->
+                                                            encode(response))
+                                                    .flatMap((Iterable<String> strings) ->
+                                                            decoderFunction.apply(strings)),
+                                    new KeysSupplier() {
+                                        @Override
+                                        public String[] get() {
+                                            return key.toArray(new String[0]);
                                         }
-                                );
-                    }
-                });
+                                    }).cache();
+
+                            return cache.track(base, key, candidate);
+
+                        }));
 
     }
 
 
     private static ClientHttpResponse decode(Iterable<String> iterable) {
+        if (iterable==null) {
+            return null;
+        }
         Iterator<String> iterator = iterable.iterator();
         String[] protocol = iterator.next().split("[/.]");
         String code = iterator.next();
         String reason = iterator.next();
 
-        MockClientHttpResponse clientResponse =
-                new MockClientHttpResponse(Integer.parseInt(code));
+        MockClientHttpResponse clientResponse = new MockClientHttpResponse(
+                Integer.parseInt(code));
 
         String postHeader = null;
         while (iterator.hasNext()) {
@@ -96,7 +100,9 @@ public class StubClientHttpConnector implements ClientHttpConnector {
             }
 
             int i = header.indexOf(": ");
-            clientResponse.getHeaders().set(header.substring(0, i), header.substring(i + 2));
+            clientResponse
+                    .getHeaders()
+                    .set(header.substring(0, i), header.substring(i + 2));
         }
 
         if (postHeader != null) {
@@ -124,40 +130,16 @@ public class StubClientHttpConnector implements ClientHttpConnector {
         res.add(Integer.toString(response.getRawStatusCode()));
         res.add(response.getStatusCode().getReasonPhrase());
 
-        List<String> headers = response.getHeaders()
-                .keySet()
-                .stream()
-                .sorted(String::compareTo)
-                .map(h -> Util.headerToString(response.getHeaders(), h))
-                .collect(Collectors.toList());
+        List<String> headers = response.getHeaders().keySet().stream().sorted(String::compareTo).map(h -> Util.headerToString(response.getHeaders(), h)).collect(Collectors.toList());
 
         res.addAll(headers);
 
         Flux<DataBuffer> body = response.getBody();
 
-        return Util.extractStringMono(body)
-                .map(bodyString -> {
-                    res.add(bodyString);
-                    return res;
-                });
+        return Util.extractStringMono(body).map(bodyString -> {
+            res.add(bodyString);
+            return res;
+        });
     }
-
-
-    private Base getBase() {
-        AnyStubId s = discoverFile();
-        if (s != null) {
-            return BaseManagerFactory
-                    .getBaseManager()
-                    .getBase(s.filename())
-                    .constrain(s.requestMode());
-        }
-        if (fallbackBase != null) {
-            return fallbackBase;
-        }
-        return BaseManagerFactory
-                .getBaseManager()
-                .getBase();
-    }
-
 
 }

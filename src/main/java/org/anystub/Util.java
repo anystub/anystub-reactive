@@ -1,11 +1,15 @@
 package org.anystub;
 
+import org.anystub.mgmt.BaseManagerFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.http.client.reactive.MockClientHttpRequest;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifierOptions;
+import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -18,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
 import static org.anystub.SettingsUtil.matchBodyRule;
 import static org.anystub.StringUtil.addTextPrefix;
 import static org.anystub.StringUtil.escapeCharacterString;
@@ -35,26 +40,17 @@ public class Util {
      */
     public static List<String> filterHeaders(HttpHeaders headers) {
 
-        boolean currentAllHeaders = HttpGlobalSettings.globalAllHeaders;
-        AnySettingsHttp settings = AnySettingsHttpExtractor.discoverSettings();
-        if (settings != null) {
-            currentAllHeaders = settings.allHeaders();
+        AnySettingsHttp settings = AnySettingsHttpExtractor.httpSettings();
+
+        if (settings.allHeaders()) {
+            return headers.keySet()
+                    .stream()
+                    .map(h->headerToString(headers, h))
+                    .sorted()
+                    .collect(Collectors.toList());
         }
 
-        Set<String> headersToAdd = new TreeSet<>();
-        if (currentAllHeaders) {
-            headersToAdd.addAll(headers.keySet());
-        } else {
-            if (settings != null) {
-                headersToAdd.addAll(asList(settings.headers()));
-            }
-            if ((settings == null || !settings.overrideGlobal()) && HttpGlobalSettings.globalHeaders != null) {
-                headersToAdd.addAll(asList(HttpGlobalSettings.globalHeaders));
-            }
-        }
-
-
-        return headersToAdd.stream()
+        return stream(settings.headers())
                 .map(h -> headerToString(headers, h))
                 .sorted()
                 .collect(Collectors.toList());
@@ -118,4 +114,15 @@ public class Util {
 
                 });
     }
+
+    public static ContextView anystubContext() {
+        return Context.of(Base.class, BaseManagerFactory.locate());
+    }
+
+    public static StepVerifierOptions anystubOptions() {
+        return StepVerifierOptions
+                .create()
+                .withInitialContext(Context.empty().putAll(anystubContext()));
+    }
+
 }
