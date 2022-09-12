@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.matching.StringValuePattern;
 import org.anystub.mgmt.BaseManagerFactory;
+import org.anystub.mgmt.MTCache;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -492,11 +495,12 @@ class StubClientHttpConnector2Test {
     @Test
     @Disabled
     @AnyStubId(requestMode = RequestMode.rmNew)
+    @AnySettingsHttp(allHeaders = true)
     void testAsync(WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
         File stubFile = new File(BaseManagerFactory.locate().getFilePath());
         Files.deleteIfExists(stubFile.toPath());
 
-        try (AutoCloseable x = BaseManagerFactory.setMtFallback()) {
+        try (AutoCloseable x = MTCache.setMtFallback()) {
             stubFor(WireMock.get("/").willReturn(ok()
                     .withBody("{\"test\":\"ok\"}")));
 
@@ -506,6 +510,7 @@ class StubClientHttpConnector2Test {
             Mono<String> blockMono1 =
                     webClient.get()
                             .uri("http://localhost:" + port)
+                            .header("Accept", "application/json")
                             .retrieve()
                             .toEntityFlux(String.class)
                             .flatMap(response -> response.getBody().collectList())
@@ -519,19 +524,39 @@ class StubClientHttpConnector2Test {
                             .flatMap(response -> response.getBody().collectList())
                             .map(strings -> String.join("", strings));
 
+            Mono<String> blockMono3 =
+                    webClient.get()
+                            .uri("http://localhost:" + port)
+                            .retrieve()
+                            .toEntityFlux(String.class)
+                            .flatMap(response -> response.getBody().collectList())
+                            .map(strings -> String.join("", strings));
+
 
             CompletableFuture.allOf(blockMono1.toFuture(),
-                    blockMono2.toFuture()).join();
+                    blockMono2.toFuture(),
+                    blockMono3.toFuture()).join();
 
 
-            // @todo: two independent Monos hit ext system independently as can't see/wait each others response
-            verify(1, getRequestedFor(urlPathEqualTo("/")));
+            // three independent Monos
+            // two have identical requests - so only one of them pass to real syste,
+            verify(2, getRequestedFor(urlPathEqualTo("/")));
+            verify(1, getRequestedFor(urlPathEqualTo("/"))
+                    .withHeader("Accept", new EqualToPattern("application/json")));
+
+            long get = BaseManagerFactory.locate()
+
+                    .timesEx("GET", "HTTP/1.1", "Accept.*");
+
+            Assertions.assertEquals(1, get);
+            Assertions.assertEquals(2, BaseManagerFactory.locate().times());
         }
     }
 
     @Test
     @Disabled
     @AnyStubId(requestMode = RequestMode.rmNew)
+    @AnySettingsHttp(headers = "Accept")
     void testRepeatedCall(WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
 
 
@@ -551,6 +576,8 @@ class StubClientHttpConnector2Test {
                 .flatMap((v) ->
                         webClient.get()
                                 .uri("http://localhost:" + port)
+                                .header("Accept", "application/json")
+                                .header("Content-Type", "application/json")
                                 .retrieve()
                                 .toEntityFlux(String.class)
                                 .flatMap(response -> response.getBody().collectList())
@@ -573,9 +600,16 @@ class StubClientHttpConnector2Test {
                 .times();
         Assertions.assertEquals(1, times);
 
+        times = BaseManagerFactory.locate()
+                .times();
+        Assertions.assertEquals(1, times);
+
         // @todo: intend to have only one call to real system,
         // but reactor runs many calls simultaneously, before earlier calls ended
         verify(1,getRequestedFor(urlPathEqualTo("/")));
+        verify(1,getRequestedFor(urlPathEqualTo("/"))
+                .withHeader("Accept", new EqualToPattern("application/json"))
+                .withoutHeader("Content-Type"));
     }
 
 

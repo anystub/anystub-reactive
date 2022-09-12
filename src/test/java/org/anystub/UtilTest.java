@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 import static java.util.Arrays.asList;
 import static org.anystub.Util.anystubContext;
+import static org.anystub.Util.extractBase;
 import static org.springframework.http.HttpHeaders.ACCEPT;
 import static org.springframework.http.HttpHeaders.ALLOW;
 import static org.springframework.http.HttpHeaders.REFERER;
@@ -53,7 +54,7 @@ class UtilTest {
     @Test
     @AnyStubId
     void reactiveContext() {
-        Base stub = anystubContext().get(Base.class);
+        Base stub = extractBase(anystubContext());
         Assertions.assertNotNull(stub);
         Assertions.assertEquals("reactiveContext.yml",
                 new File(stub.getFilePath()).getName());
@@ -66,8 +67,8 @@ class UtilTest {
         StepVerifier.create(Mono.just(1),
                 Util.anystubOptions())
                 .expectAccessibleContext()
-                .matches(context -> context.hasKey(Base.class))
-                .matches(context -> context.get(Base.class)
+                .matches(context -> context.hasKey(AnyStubId.class))
+                .matches(context -> Util.extractBase(context)
                         .getFilePath()
                         .endsWith("customName.yml"))
                 .then()

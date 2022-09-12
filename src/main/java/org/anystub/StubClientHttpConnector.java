@@ -1,6 +1,5 @@
 package org.anystub;
 
-import org.anystub.mgmt.BaseManagerFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -18,12 +17,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.anystub.Util.HEADER_MASK;
+import static org.anystub.Util.extractBase;
+import static org.anystub.Util.extractHttpOptions;
 
 
 public class StubClientHttpConnector implements ClientHttpConnector {
@@ -45,15 +44,20 @@ public class StubClientHttpConnector implements ClientHttpConnector {
         Mono<MockClientHttpRequest> requestMono = requestCallback
                 .apply(request)
                 .then(Mono.defer(() ->
-                        Mono.just(request).cache()));
+                        Mono.just(request)
+                                .cache()));
 
 
         return requestMono
-                .flatMap(clientHttpRequest -> Util
-                        .getStringsMono(method, uri, clientHttpRequest))
+                .flatMap(clientHttpRequest ->
+                        Mono.deferContextual(ctx -> {
+                            AnySettingsHttp settingsHttp = extractHttpOptions(ctx);
+                            return Util.getRequestKey(method, uri, clientHttpRequest, settingsHttp);
+                        }))
                 .flatMap((Function<List<String>, Mono<ClientHttpResponse>>) key ->
                         Mono.deferContextual(ctx -> {
-                            Base base = ctx.getOrDefault(Base.class, BaseManagerFactory.locate());
+
+                            Base base = extractBase(ctx);
 
                             Mono<ClientHttpResponse> candidate = base.request2(() -> real.connect(method, uri, requestCallback),
                                     (Iterable<String> iterable) -> Mono.just(decode(iterable)),
