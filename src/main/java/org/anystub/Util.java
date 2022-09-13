@@ -16,16 +16,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
-import static org.anystub.SettingsUtil.matchBodyRule;
+
 import static org.anystub.StringUtil.addTextPrefix;
 import static org.anystub.StringUtil.escapeCharacterString;
+import static org.anystub.StringUtil.isText;
 import static org.anystub.StringUtil.toCharacterString;
 
 public class Util {
@@ -41,11 +39,15 @@ public class Util {
     public static List<String> filterHeaders(HttpHeaders headers) {
 
         AnySettingsHttp settings = AnySettingsHttpExtractor.httpSettings();
+        return filterHeaders(headers, settings);
+    }
+
+    public static List<String> filterHeaders(HttpHeaders headers, AnySettingsHttp settings) {
 
         if (settings.allHeaders()) {
             return headers.keySet()
                     .stream()
-                    .map(h->headerToString(headers, h))
+                    .map(h -> headerToString(headers, h))
                     .sorted()
                     .collect(Collectors.toList());
         }
@@ -88,23 +90,31 @@ public class Util {
                 });
     }
 
-    public static Mono<List<String>> getStringsMono(HttpMethod method, URI uri, MockClientHttpRequest request) {
+    /**
+     * builds key for the request according to http setting
+     *
+     * @param method
+     * @param uri
+     * @param request
+     * @return
+     */
+    public static Mono<List<String>> getRequestKey(HttpMethod method, URI uri, MockClientHttpRequest request, AnySettingsHttp settingsHttp) {
         ArrayList<String> key = new ArrayList<>();
         key.add(method.name());
         key.add("HTTP/1.1");
-        key.addAll(filterHeaders(request.getHeaders()));
+        key.addAll(filterHeaders(request.getHeaders(), settingsHttp));
         key.add(uri.toString());
 
         return Mono.just(key.toArray(new String[0]))
                 .flatMap(keys -> {
-                    if (!matchBodyRule(uri.toString())) {
+                    if (!SettingsUtil.matchBodyRule(uri.toString(), settingsHttp)) {
                         return Mono.just(List.of(keys));
                     }
                     return request.getBodyAsString()
                             .switchIfEmpty(Mono.just(""))
                             .map((String body) -> {
-                                String maskedBody = SettingsUtil.maskBody(body);
-                                String safeBody = StringUtil.isText(maskedBody) ?
+                                String maskedBody = SettingsUtil.maskBody(body, settingsHttp);
+                                String safeBody = isText(maskedBody) ?
                                         escapeCharacterString(maskedBody) :
                                         toCharacterString(maskedBody.getBytes(StandardCharsets.UTF_8));
 
@@ -116,13 +126,32 @@ public class Util {
     }
 
     public static ContextView anystubContext() {
-        return Context.of(Base.class, BaseManagerFactory.locate());
+        return Context.of(AnyStubId.class, AnyStubFileLocator.discoverFile(),
+                AnySettingsHttp.class, AnySettingsHttpExtractor.httpSettings());
     }
 
     public static StepVerifierOptions anystubOptions() {
         return StepVerifierOptions
                 .create()
                 .withInitialContext(Context.empty().putAll(anystubContext()));
+    }
+
+    /**
+     * extract stub from context
+     * @param ctx
+     * @return
+     */
+    public static Base extractBase(ContextView ctx) {
+        AnyStubId anyStubId = ctx.getOrDefault(AnyStubId.class, null);
+        if (anyStubId != null) {
+            return BaseManagerFactory.baseFromSettings(anyStubId);
+        }
+
+        return BaseManagerFactory.locate();
+    }
+
+    public static AnySettingsHttp extractHttpOptions(ContextView ctx) {
+        return ctx.getOrDefault(AnySettingsHttp.class, AnySettingsHttpExtractor.httpSettings());
     }
 
 }

@@ -5,7 +5,6 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.reactive.ClientHttpResponse;
 import org.springframework.mock.http.client.reactive.MockClientHttpRequest;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.ClientRequest;
@@ -27,6 +26,7 @@ import java.util.stream.Collectors;
 
 import static org.anystub.AnyStubFileLocator.discoverFile;
 import static org.anystub.Util.HEADER_MASK;
+import static org.anystub.Util.extractHttpOptions;
 import static org.anystub.Util.headerToString;
 
 public class StubExchangeFilterFunction implements ExchangeFilterFunction {
@@ -44,8 +44,11 @@ public class StubExchangeFilterFunction implements ExchangeFilterFunction {
                 .cache();
 
         return requestMono
-                .flatMap(mockClientHttpRequest1 -> Util
-                        .getStringsMono(method, uri, mockClientHttpRequest1))
+                .flatMap(mockClientHttpRequest1 ->
+                        Mono.deferContextual(ctx -> {
+                            AnySettingsHttp settingsHttp = extractHttpOptions(ctx);
+                            return Util.getRequestKey(method, uri, mockClientHttpRequest1, settingsHttp);
+                        }))
                 .flatMap((Function<List<String>, Mono<ClientResponse>>) key ->
                         Mono.deferContextual(ctx -> {
                             Base base = ctx.getOrDefault(Base.class, BaseManagerFactory.locate());
