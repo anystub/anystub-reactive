@@ -235,6 +235,46 @@ class StubClientHttpConnector2Test {
                 .history()
                 .findFirst().get();
 
+        Assertions.assertEquals("http://localhost:"+port, document.getKey(-2));
+        Assertions.assertTrue(document.getKey(-1).startsWith("{"));
+
+    }
+
+    @Test
+    @AnyStubId(requestMode = RequestMode.rmAll)
+    @AnySettingsHttp(bodyTrigger = "")
+    void testNoBodyInGet(WireMockRuntimeInfo wmRuntimeInfo) {
+        // The static DSL will be automatically configured for you
+        stubFor(WireMock.get("/")
+                .willReturn(ok()
+                        .withHeader("x-forward", "test")
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("{\"test\":\"ok\"}")));
+
+
+        // Info such as port numbers is also available
+        int port = wmRuntimeInfo.getHttpPort();
+        String block =
+                webClient.get()
+                        .uri("http://localhost:"+port)
+                        .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                        .header("Accept", "application/x-ndjson", "plain/text", MediaType.ALL_VALUE)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
+
+        Assertions.assertEquals("{\"test\":\"ok\"}", block);
+
+        long times = BaseManagerFactory.locate()
+                .times();
+        Assertions.assertEquals(1, times);
+
+        Document document = BaseManagerFactory.locate()
+                .history()
+                .findFirst().get();
+
+        Assertions.assertEquals("http://localhost:"+port, document.getKey(-1));
+
     }
 
 

@@ -107,7 +107,7 @@ public class Util {
 
         return Mono.just(key.toArray(new String[0]))
                 .flatMap(keys -> {
-                    if (!SettingsUtil.matchBodyRule(uri.toString(), settingsHttp)) {
+                    if (!SettingsUtil.matchBodyRule(method.name(), uri.toString(), settingsHttp)) {
                         return Mono.just(List.of(keys));
                     }
                     return request.getBodyAsString()
