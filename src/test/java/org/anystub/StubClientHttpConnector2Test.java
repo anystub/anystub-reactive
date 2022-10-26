@@ -646,10 +646,4 @@ class StubClientHttpConnector2Test {
     }
 
 
-    @Test
-    @AnyStubId
-    void testNoBodyInGet() {
-
-    }
-
 }
