@@ -161,17 +161,4 @@ public class StubExchangeFilterFunction implements ExchangeFilterFunction {
     }
 
 
-    private Base getBase() {
-        AnyStubId s = discoverFile();
-        if (s != null) {
-            return BaseManagerFactory
-                    .getBaseManager()
-                    .getBase(s.filename())
-                    .constrain(s.requestMode());
-        }
-
-        return BaseManagerFactory
-                .getBaseManager()
-                .getBase();
-    }
 }
