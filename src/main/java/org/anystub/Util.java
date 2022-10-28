@@ -98,7 +98,10 @@ public class Util {
      * @param request
      * @return
      */
-    public static Mono<List<String>> getRequestKey(HttpMethod method, URI uri, MockClientHttpRequest request, AnySettingsHttp settingsHttp) {
+    public static Mono<List<String>> getRequestKey(HttpMethod method, URI uri,
+                                                   MockClientHttpRequest request,
+                                                   AnySettingsHttp settingsHttp,
+                                                   AnyStubId settings) {
         ArrayList<String> key = new ArrayList<>();
         key.add(method.name());
         key.add("HTTP/1.1");
@@ -113,7 +116,7 @@ public class Util {
                     return request.getBodyAsString()
                             .switchIfEmpty(Mono.just(""))
                             .map((String body) -> {
-                                String maskedBody = SettingsUtil.maskBody(body, settingsHttp);
+                                String maskedBody = SettingsUtil.maskBody(body, settings);
                                 String safeBody = isText(maskedBody) ?
                                         escapeCharacterString(maskedBody) :
                                         toCharacterString(maskedBody.getBytes(StandardCharsets.UTF_8));
@@ -152,6 +155,10 @@ public class Util {
 
     public static AnySettingsHttp extractHttpOptions(ContextView ctx) {
         return ctx.getOrDefault(AnySettingsHttp.class, AnySettingsHttpExtractor.httpSettings());
+    }
+
+    public static AnyStubId extractOptions(ContextView ctx) {
+        return ctx.getOrDefault(AnyStubId.class, AnyStubFileLocator.discoverFile());
     }
 
 }
