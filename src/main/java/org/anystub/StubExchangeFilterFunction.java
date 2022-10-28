@@ -24,14 +24,15 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.anystub.AnyStubFileLocator.discoverFile;
 import static org.anystub.Util.HEADER_MASK;
 import static org.anystub.Util.extractHttpOptions;
+import static org.anystub.Util.extractOptions;
 import static org.anystub.Util.headerToString;
 
 public class StubExchangeFilterFunction implements ExchangeFilterFunction {
 
     private final RequestCache<ClientResponse> cache = new RequestCache<>();
+
     @Override
     public Mono<ClientResponse> filter(ClientRequest request, ExchangeFunction next) {
         HttpMethod method = request.method();
@@ -47,7 +48,8 @@ public class StubExchangeFilterFunction implements ExchangeFilterFunction {
                 .flatMap(mockClientHttpRequest1 ->
                         Mono.deferContextual(ctx -> {
                             AnySettingsHttp settingsHttp = extractHttpOptions(ctx);
-                            return Util.getRequestKey(method, uri, mockClientHttpRequest1, settingsHttp);
+                            AnyStubId settings = extractOptions(ctx);
+                            return Util.getRequestKey(method, uri, mockClientHttpRequest1, settingsHttp, settings);
                         }))
                 .flatMap((Function<List<String>, Mono<ClientResponse>>) key ->
                         Mono.deferContextual(ctx -> {
@@ -161,17 +163,4 @@ public class StubExchangeFilterFunction implements ExchangeFilterFunction {
     }
 
 
-    private Base getBase() {
-        AnyStubId s = discoverFile();
-        if (s != null) {
-            return BaseManagerFactory
-                    .getBaseManager()
-                    .getBase(s.filename())
-                    .constrain(s.requestMode());
-        }
-
-        return BaseManagerFactory
-                .getBaseManager()
-                .getBase();
-    }
 }

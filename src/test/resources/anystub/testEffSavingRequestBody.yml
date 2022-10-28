@@ -1,7 +1,6 @@
-request0:
-  exception: []
-  keys: [POST, HTTP/1.1, 'Accept: application/x-ndjson, plain/text, */*', 'http://localhost:8080',
-    '{"code":23,"msg":"test msg","date":[2022,6,30]}']
-  values: [HTTP/1.1, '200', OK, 'Content-Type: application/json', 'Matched-Stub-Id:
-      a3559d7e-3726-4577-a219-8f67e72d4925', 'Transfer-Encoding: chunked', 'Vary:
-      Accept-Encoding, User-Agent', 'x-forward: test', '{"test":"ok"}']
+exception: []
+keys: [POST, HTTP/1.1, 'Accept: application/x-ndjson, plain/text, */*', 'http://localhost:8080',
+  '{"code":23,"msg":"test msg","date":[2022,6,30]}']
+values: [HTTP/1.1, '200', OK, 'Content-Type: application/json', 'Matched-Stub-Id:
+    89e75755-9b33-4364-a593-92b9adbbc47b', 'Transfer-Encoding: chunked', 'Vary: Accept-Encoding,
+    User-Agent', 'x-forward: test', '{"test":"ok"}']

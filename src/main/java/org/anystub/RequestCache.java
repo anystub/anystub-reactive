@@ -1,6 +1,5 @@
 package org.anystub;
 
-import org.springframework.http.client.reactive.ClientHttpResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -23,7 +22,7 @@ public class  RequestCache<T> {
         if (!base.seekInCache()) {
             return candidate;
         }
-        return m.computeIfAbsent(new QueryKey(base.getFilePath(), key), (tk) -> candidate);
+        return m.computeIfAbsent(new QueryKey(base.getFilePath(), key), tk -> candidate);
     }
 
 }

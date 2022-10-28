@@ -1,7 +1,6 @@
-request0:
-  exception: []
-  keys: [POST, HTTP/1.1, 'http://localhost:8080', '{"code":23,"msg":"hypothetical
-      request containing a ... data like a ..., or a variable timestamp...request","date":[...]}']
-  values: [HTTP/1.1, '200', OK, 'Content-Type: application/json', 'Matched-Stub-Id:
-      48c67ab7-851e-478a-8396-d3ec1fd8339a', 'Transfer-Encoding: chunked', 'Vary:
-      Accept-Encoding, User-Agent', 'x-forward: test', '{"test":"ok"}']
+exception: []
+keys: [POST, HTTP/1.1, 'http://localhost:8080', '{"code":23,"msg":"hypothetical request
+    containing a ... data like a ..., or a variable timestamp...request","date":[...]}']
+values: [HTTP/1.1, '200', OK, 'Content-Type: application/json', 'Matched-Stub-Id:
+    678bbb63-94e8-462b-b753-e6fe4fec09dc', 'Transfer-Encoding: chunked', 'Vary: Accept-Encoding,
+    User-Agent', 'x-forward: test', '{"test":"ok"}']

@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import static org.anystub.Util.HEADER_MASK;
 import static org.anystub.Util.extractBase;
 import static org.anystub.Util.extractHttpOptions;
+import static org.anystub.Util.extractOptions;
 
 
 public class StubClientHttpConnector implements ClientHttpConnector {
@@ -52,7 +53,8 @@ public class StubClientHttpConnector implements ClientHttpConnector {
                 .flatMap(clientHttpRequest ->
                         Mono.deferContextual(ctx -> {
                             AnySettingsHttp settingsHttp = extractHttpOptions(ctx);
-                            return Util.getRequestKey(method, uri, clientHttpRequest, settingsHttp);
+                            AnyStubId settings = extractOptions(ctx);
+                            return Util.getRequestKey(method, uri, clientHttpRequest, settingsHttp, settings);
                         }))
                 .flatMap((Function<List<String>, Mono<ClientHttpResponse>>) key ->
                         Mono.deferContextual(ctx -> {
