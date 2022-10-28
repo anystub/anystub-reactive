@@ -53,6 +53,7 @@ public class Util {
         }
 
         return stream(settings.headers())
+                .filter(headers::containsKey)
                 .map(h -> headerToString(headers, h))
                 .sorted()
                 .collect(Collectors.toList());

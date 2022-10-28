@@ -72,7 +72,7 @@ class StubClientHttpConnector2Test {
 
     @Test
     @AnyStubId(requestMode = RequestMode.rmAll)
-    @AnySettingsHttp(headers = "Accept")
+    @AnySettingsHttp(headers = {"Accept", "missing-header"})
     void testSavingHeaders(WireMockRuntimeInfo wmRuntimeInfo) {
         // The static DSL will be automatically configured for you
         stubFor(WireMock.get("/").willReturn(ok()
@@ -103,7 +103,7 @@ class StubClientHttpConnector2Test {
                 .history()
                 .findFirst().get();
 
-        Assertions.assertTrue(document.matchEx_to(null, null, "Accept:.*"));
+        Assertions.assertTrue(document.matchEx_to(null, null, "Accept:.*", "http.*"));
 
         ArrayList<String> objects = new ArrayList<>();
         document.getVals().forEach(objects::add);
