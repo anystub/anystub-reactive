@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.anystub.Util.HEADER_MASK;
+import static org.anystub.Util.extractBase;
 import static org.anystub.Util.extractHttpOptions;
 import static org.anystub.Util.extractOptions;
 import static org.anystub.Util.headerToString;
@@ -53,7 +54,7 @@ public class StubExchangeFilterFunction implements ExchangeFilterFunction {
                         }))
                 .flatMap((Function<List<String>, Mono<ClientResponse>>) key ->
                         Mono.deferContextual(ctx -> {
-                            Base base = ctx.getOrDefault(Base.class, BaseManagerFactory.locate());
+                            Base base = extractBase(ctx);
 
                             Mono<ClientResponse> candidate = base.request2(
                                     () -> next.exchange(request),
