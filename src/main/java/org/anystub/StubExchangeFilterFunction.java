@@ -1,6 +1,5 @@
 package org.anystub;
 
-import org.anystub.mgmt.BaseManagerFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
