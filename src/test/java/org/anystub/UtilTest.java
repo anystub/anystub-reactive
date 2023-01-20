@@ -77,6 +77,12 @@ class UtilTest {
     }
 
 
+    @Test
+    void testNoExceptions() {
+        Assertions.assertDoesNotThrow(()-> {
+            Util.anystubOptionsMT();
+        });
+    }
 
 
 }
