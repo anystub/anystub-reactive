@@ -1,6 +1,7 @@
 package org.anystub;
 
 import org.anystub.mgmt.BaseManagerFactory;
+import org.anystub.mgmt.MTCache;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.stream;
-
 import static org.anystub.StringUtil.addTextPrefix;
 import static org.anystub.StringUtil.escapeCharacterString;
 import static org.anystub.StringUtil.isText;
@@ -130,14 +130,26 @@ public class Util {
     }
 
     public static ContextView anystubContext() {
-        return Context.of(AnyStubId.class, AnyStubFileLocator.discoverFile(),
-                AnySettingsHttp.class, AnySettingsHttpExtractor.httpSettings());
+        Context context = Context.empty();
+        AnyStubId anyStubId = AnyStubFileLocator.discoverFile();
+        if (anyStubId!=null) {
+            context = context.put(AnyStubId.class, anyStubId);
+        }
+        AnySettingsHttp anySettingsHttp = AnySettingsHttpExtractor.httpSettings();
+        if (anySettingsHttp!=null) {
+            context = context.put(AnySettingsHttp.class, anySettingsHttp);
+        }
+        return context;
     }
 
     public static StepVerifierOptions anystubOptions() {
         return StepVerifierOptions
                 .create()
                 .withInitialContext(Context.empty().putAll(anystubContext()));
+    }
+    public static StepVerifierOptions anystubOptionsMT() {
+        MTCache.setMtFallback();
+        return anystubOptions();
     }
 
     /**
