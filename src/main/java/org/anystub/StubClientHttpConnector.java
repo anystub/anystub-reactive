@@ -69,7 +69,10 @@ public class StubClientHttpConnector implements ClientHttpConnector {
                                                     .flatMap((ClientHttpResponse response) ->
                                                             encode(response))
                                                     .flatMap((Iterable<String> strings) ->
-                                                            decoderFunction.apply(strings)),
+                                                            decoderFunction.apply(strings, null))
+                                                    .doOnError(throwable -> {
+                                                        decoderFunction.apply(null, throwable);
+                                                    }),
                                     new KeysSupplier() {
                                         @Override
                                         public String[] get() {

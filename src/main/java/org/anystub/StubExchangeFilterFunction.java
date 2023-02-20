@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -60,10 +61,12 @@ public class StubExchangeFilterFunction implements ExchangeFilterFunction {
                                     values -> Mono.just(decode(values)),
                                     new Inverter<Mono<ClientResponse>>() {
                                         @Override
-                                        public Mono<ClientResponse> invert(Mono<ClientResponse> clientResponseMono, Function<Iterable<String>, Mono<ClientResponse>> decoderFunction) {
+                                        public Mono<ClientResponse> invert(Mono<ClientResponse> clientResponseMono, BiFunction<Iterable<String>, Throwable, Mono<ClientResponse>> decoderFunction) {
                                             return clientResponseMono
                                                     .flatMap((ClientResponse clientResponse) -> encode(clientResponse))
-                                                    .flatMap((Iterable<String> strings) -> decoderFunction.apply(strings));
+                                                    .flatMap((Iterable<String> strings) -> decoderFunction.apply(strings, null))
+                                                    .doOnError(throwable -> decoderFunction.apply(null, throwable));
+
                                         }
                                     },
                                     new KeysSupplier() {

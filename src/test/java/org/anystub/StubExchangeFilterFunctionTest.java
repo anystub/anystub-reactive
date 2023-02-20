@@ -8,8 +8,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.io.File;
@@ -220,5 +222,23 @@ class StubExchangeFilterFunctionTest {
                 .expectNext("{\"test\":\"ok\"}")
                 .verifyComplete();
 
+    }
+
+    @Test
+    @AnyStubId(requestMode = RequestMode.rmAll)
+    void testFailedConnection(WireMockRuntimeInfo wmRuntimeInfo) {
+        int port = wmRuntimeInfo.getHttpPort();
+        Mono<ResponseEntity<Flux<String>>> accept = webClient.get()
+                .uri("http://localhost:" + (port+1))
+                .retrieve()
+                .toEntityFlux(String.class);
+
+        StepVerifier.create(accept, anystubOptions())
+                .verifyError();
+
+        long times = locate()
+                .times();
+
+        Assertions.assertEquals(1, times);
     }
 }

@@ -5,14 +5,15 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import org.anystub.mgmt.BaseManagerFactory;
 import org.anystub.mgmt.MTCache;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -31,6 +32,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.anystub.Util.anystubOptions;
+import static org.anystub.mgmt.BaseManagerFactory.locate;
 
 @WireMockTest(httpPort = 8080)
 class StubClientHttpConnector2Test {
@@ -64,7 +66,7 @@ class StubClientHttpConnector2Test {
 
         Assertions.assertEquals("{\"test\":\"ok\"}", block);
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(1, times);
 
@@ -95,11 +97,11 @@ class StubClientHttpConnector2Test {
 
         Assertions.assertEquals("{\"test\":\"ok\"}", block);
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(1, times);
 
-        Document document = BaseManagerFactory.locate()
+        Document document = locate()
                 .history()
                 .findFirst().get();
 
@@ -181,11 +183,11 @@ class StubClientHttpConnector2Test {
 
         Assertions.assertEquals("{\"test\":\"ok\"}", block);
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(1, times);
 
-        Document document = BaseManagerFactory.locate()
+        Document document = locate()
                 .history()
                 .findFirst().get();
 
@@ -227,11 +229,11 @@ class StubClientHttpConnector2Test {
 
         Assertions.assertEquals("{\"test\":\"ok\"}", block);
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(1, times);
 
-        Document document = BaseManagerFactory.locate()
+        Document document = locate()
                 .history()
                 .findFirst().get();
 
@@ -265,11 +267,11 @@ class StubClientHttpConnector2Test {
 
         Assertions.assertEquals("{\"test\":\"ok\"}", block);
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(1, times);
 
-        Document document = BaseManagerFactory.locate()
+        Document document = locate()
                 .history()
                 .findFirst().get();
 
@@ -312,11 +314,11 @@ class StubClientHttpConnector2Test {
 
         Assertions.assertEquals("{\"test\":\"ok\"}", block);
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(1, times);
 
-        Document document = BaseManagerFactory.locate()
+        Document document = locate()
                 .history()
                 .findFirst().get();
 
@@ -351,11 +353,11 @@ class StubClientHttpConnector2Test {
 
         Assertions.assertEquals("line1\nline2"+(char)0x01+"eom", block);
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(1, times);
 
-        Document document = BaseManagerFactory.locate()
+        Document document = locate()
                 .history()
                 .findFirst().get();
 
@@ -368,8 +370,8 @@ class StubClientHttpConnector2Test {
     @RepeatedTest(3)
     @AnyStubId(requestMode = RequestMode.rmNew)
     void testRMNewMode(WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
-        BaseManagerFactory.locate().clear();
-        String filePath = BaseManagerFactory.locate().getFilePath();
+        locate().clear();
+        String filePath = locate().getFilePath();
         Files.deleteIfExists(new File(filePath).toPath());
 
         // The static DSL will be automatically configured for you
@@ -398,11 +400,11 @@ class StubClientHttpConnector2Test {
                         .stream().collect(Collectors.joining());
         Assertions.assertEquals(block, block2);
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(2, times);
 
-        long count = BaseManagerFactory.locate()
+        long count = locate()
                 .history()
                 .count();
 
@@ -440,11 +442,11 @@ class StubClientHttpConnector2Test {
                         .stream().collect(Collectors.joining());
         Assertions.assertEquals(block, block2);
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(2, times);
 
-        long count = BaseManagerFactory.locate()
+        long count = locate()
                 .history()
                 .count();
 
@@ -475,7 +477,7 @@ class StubClientHttpConnector2Test {
         Assertions.assertEquals("Content-Type: ok", block);
 
 
-        Document document = BaseManagerFactory.locate()
+        Document document = locate()
                 .history()
                 .findFirst()
                 .get();
@@ -514,11 +516,11 @@ class StubClientHttpConnector2Test {
                 .verifyComplete();
 
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(1, times);
 
-        long count = BaseManagerFactory.locate()
+        long count = locate()
                 .history()
                 .count();
 
@@ -531,9 +533,9 @@ class StubClientHttpConnector2Test {
     @AnyStubId(requestMode = RequestMode.rmNew)
     @AnySettingsHttp(allHeaders = true)
     void testAsync(WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
-        File stubFile = new File(BaseManagerFactory.locate().getFilePath());
+        File stubFile = new File(locate().getFilePath());
         Files.deleteIfExists(stubFile.toPath());
-        BaseManagerFactory.locate().clear();
+        locate().clear();
 
         try (AutoCloseable x = MTCache.setMtFallback()) {
             stubFor(WireMock.get("/").willReturn(ok()
@@ -579,7 +581,7 @@ class StubClientHttpConnector2Test {
             verify(1, getRequestedFor(urlPathEqualTo("/"))
                     .withHeader("Accept", new EqualToPattern("application/json")));
 
-            long get = BaseManagerFactory.locate()
+            long get = locate()
 
                     .timesEx("GET", "HTTP/1.1", "Accept.*");
 
@@ -596,7 +598,7 @@ class StubClientHttpConnector2Test {
     void testRepeatedCall(WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
 
 
-        File stubFile = new File(BaseManagerFactory.locate().getFilePath());
+        File stubFile = new File(locate().getFilePath());
         Files.deleteIfExists(stubFile.toPath());
 
         stubFor(WireMock.get("/").willReturn(ok()
@@ -632,11 +634,11 @@ class StubClientHttpConnector2Test {
 
 
 
-        long times = BaseManagerFactory.locate()
+        long times = locate()
                 .times();
         Assertions.assertEquals(1, times);
 
-        times = BaseManagerFactory.locate()
+        times = locate()
                 .timesEx("GET", "HTTP/1.1", "Accept.*");
         Assertions.assertEquals(1, times);
 
@@ -645,5 +647,23 @@ class StubClientHttpConnector2Test {
                 .withHeader("Accept", new EqualToPattern("application/json")));
     }
 
+
+    @Test
+    @AnyStubId(requestMode = RequestMode.rmAll)
+    void testFailedConnection(WireMockRuntimeInfo wmRuntimeInfo) {
+        int port = wmRuntimeInfo.getHttpPort();
+        Mono<ResponseEntity<Flux<String>>> accept = webClient.get()
+                .uri("http://localhost:" + (port+1))
+                .retrieve()
+                .toEntityFlux(String.class);
+
+        StepVerifier.create(accept, anystubOptions())
+                .verifyError();
+
+        long times = locate()
+                .times();
+
+        Assertions.assertEquals(1, times);
+    }
 
 }
