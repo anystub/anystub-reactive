@@ -226,7 +226,7 @@ class StubExchangeFilterFunctionTest {
 
     @Test
     @AnyStubId(requestMode = RequestMode.rmAll)
-    void testFailedConnection(WireMockRuntimeInfo wmRuntimeInfo) {
+    void testFailedConnection2(WireMockRuntimeInfo wmRuntimeInfo) {
         int port = wmRuntimeInfo.getHttpPort();
         Mono<ResponseEntity<Flux<String>>> accept = webClient.get()
                 .uri("http://localhost:" + (port+1))
