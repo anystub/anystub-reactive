@@ -35,6 +35,7 @@ import static org.anystub.Util.anystubOptions;
 import static org.anystub.mgmt.BaseManagerFactory.locate;
 
 @WireMockTest(httpPort = 8080)
+@AnyStubId
 class StubClientHttpConnector2Test {
     private WebClient webClient;
 
@@ -198,7 +199,7 @@ class StubClientHttpConnector2Test {
     }
 
     @Test
-    @AnyStubId(requestMode = RequestMode.rmNone)
+    @AnyStubId(filename = "testUseSaved", requestMode = RequestMode.rmNone)
     @AnySettingsHttp(headers = "Accept", bodyTrigger = "")
     void testUseSaved(WireMockRuntimeInfo wmRuntimeInfo) {
         // The static DSL will be automatically configured for you
@@ -368,7 +369,6 @@ class StubClientHttpConnector2Test {
 
 
     @RepeatedTest(3)
-    @AnyStubId(requestMode = RequestMode.rmNew)
     void testRMNewMode(WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
         locate().clear();
         String filePath = locate().getFilePath();
@@ -530,7 +530,6 @@ class StubClientHttpConnector2Test {
     }
 
     @RepeatedTest(value = 10)
-    @AnyStubId(requestMode = RequestMode.rmNew)
     @AnySettingsHttp(allHeaders = true)
     void testAsync(WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
         File stubFile = new File(locate().getFilePath());
@@ -593,7 +592,6 @@ class StubClientHttpConnector2Test {
     }
 
     @Test
-    @AnyStubId(requestMode = RequestMode.rmNew)
     @AnySettingsHttp(headers = "Accept")
     void testRepeatedCall(WireMockRuntimeInfo wmRuntimeInfo) throws IOException {
 

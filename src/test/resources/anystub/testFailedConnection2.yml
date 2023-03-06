@@ -1,6 +1,0 @@
-exception: [org.springframework.web.reactive.function.client.WebClientRequestException,
-  'Connection refused: no further information: localhost/127.0.0.1:8081; nested exception
-    is io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused:
-    no further information: localhost/127.0.0.1:8081']
-keys: [GET, HTTP/1.1, 'http://localhost:8081']
-values: []

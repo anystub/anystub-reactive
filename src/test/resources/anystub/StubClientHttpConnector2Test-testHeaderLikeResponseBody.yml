@@ -1,5 +1,5 @@
 exception: []
 keys: [GET, HTTP/1.1, 'http://localhost:8080']
 values: [HTTP/1.1, '200', OK, 'Content-Type: application/octet-stream', 'Matched-Stub-Id:
-    33c4905e-e381-4396-82bd-e2fe546efe6e', 'Transfer-Encoding: chunked', 'Vary: Accept-Encoding,
+    597a9113-03e3-4e0e-a766-b519cb9c48bd', 'Transfer-Encoding: chunked', 'Vary: Accept-Encoding,
     User-Agent', 'TEXT Content-Type: ok']
