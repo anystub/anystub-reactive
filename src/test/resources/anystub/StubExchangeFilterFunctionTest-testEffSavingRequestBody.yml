@@ -2,5 +2,5 @@ exception: []
 keys: [POST, HTTP/1.1, 'Accept: application/x-ndjson, plain/text, */*', 'http://localhost:8080',
   '{"code":23,"msg":"test msg","date":[2022,6,30]}']
 values: [HTTP/1.1, '200', OK, 'Content-Type: application/json', 'Matched-Stub-Id:
-    fadd7ce3-6d3d-4026-84e6-925c105b47eb', 'Transfer-Encoding: chunked', 'Vary: Accept-Encoding,
+    f57d65be-318c-4818-8de6-6689cb3c021a', 'Transfer-Encoding: chunked', 'Vary: Accept-Encoding,
     User-Agent', 'x-forward: test', '{"test":"ok"}']

@@ -1,18 +1,13 @@
 package org.anystub;
 
-import org.anystub.mgmt.BaseManagerFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import reactor.test.StepVerifierOptions;
-import reactor.util.context.Context;
-import reactor.util.context.ContextView;
 
 import java.io.File;
 import java.util.List;
-import java.util.function.Function;
 
 import static java.util.Arrays.asList;
 import static org.anystub.Util.anystubContext;
@@ -56,7 +51,7 @@ class UtilTest {
     void reactiveContext() {
         Base stub = extractBase(anystubContext());
         Assertions.assertNotNull(stub);
-        Assertions.assertEquals("reactiveContext.yml",
+        Assertions.assertEquals("UtilTest-reactiveContext.yml",
                 new File(stub.getFilePath()).getName());
 
     }
