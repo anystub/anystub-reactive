@@ -1,4 +1,4 @@
 # example of the config - all values are default
 
-testFilePrefix: true   # default
-bodyMethods: POST, PUT, DELETE # default
+#testFilePrefix: true   # default
+#bodyMethods: POST, PUT, DELETE # default
