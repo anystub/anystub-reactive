@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.anystub.Util.HEADER_MASK;
+import static org.anystub.Util.code2Text;
 import static org.anystub.Util.extractBase;
 import static org.anystub.Util.extractHttpOptions;
 import static org.anystub.Util.extractOptions;
@@ -131,8 +132,8 @@ public class StubExchangeFilterFunction implements ExchangeFilterFunction {
         }
 
         res.add("HTTP/1.1");
-        res.add(Integer.toString(response.rawStatusCode()));
-        res.add(response.statusCode().getReasonPhrase());
+        res.add(Integer.toString(response.statusCode().value()));
+        res.add(code2Text(response.statusCode()));
 
         List<String> headers = response.headers()
                 .asHttpHeaders()

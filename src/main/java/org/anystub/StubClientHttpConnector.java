@@ -21,10 +21,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.anystub.Util.HEADER_MASK;
+import static org.anystub.Util.code2Text;
 import static org.anystub.Util.extractBase;
 import static org.anystub.Util.extractHttpOptions;
 import static org.anystub.Util.extractOptions;
-
 
 public class StubClientHttpConnector implements ClientHttpConnector {
 
@@ -134,8 +134,8 @@ public class StubClientHttpConnector implements ClientHttpConnector {
         }
 
         res.add("HTTP/1.1");
-        res.add(Integer.toString(response.getRawStatusCode()));
-        res.add(response.getStatusCode().getReasonPhrase());
+        res.add(Integer.toString(response.getStatusCode().value()));
+        res.add(code2Text(response.getStatusCode()));
 
         List<String> headers = response.getHeaders().keySet().stream().sorted(String::compareTo).map(h -> Util.headerToString(response.getHeaders(), h)).collect(Collectors.toList());
 
