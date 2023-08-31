@@ -5,6 +5,8 @@ import org.anystub.mgmt.MTCache;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.mock.http.client.reactive.MockClientHttpRequest;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -173,5 +175,14 @@ public class Util {
     public static AnyStubId extractOptions(ContextView ctx) {
         return ctx.getOrDefault(AnyStubId.class, AnyStubFileLocator.discoverFile());
     }
+
+    public static String code2Text(HttpStatusCode code) {
+        HttpStatus resolve = HttpStatus.resolve(code.value());
+        if (resolve == null) {
+            return "";
+        }
+        return resolve.getReasonPhrase();
+    }
+
 
 }
