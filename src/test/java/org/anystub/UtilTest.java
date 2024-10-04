@@ -3,10 +3,14 @@ package org.anystub;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -79,5 +83,19 @@ class UtilTest {
         });
     }
 
+
+    @Test
+    void test() {
+
+        Flux<String> stringFlux = Flux.range(1, 10)
+                .publishOn(Schedulers.boundedElastic())
+                .flatMap(f -> Mono.fromCallable(() -> {
+                    return "";
+                }));
+
+        StepVerifier.create(stringFlux)
+                .expectNextCount(10)
+                .verifyComplete();
+    }
 
 }
